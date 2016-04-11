@@ -12,17 +12,11 @@ state("FP", "1.20.6")
  
 startup
 {
-    /*vars.playerpos = "";
-    vars.fullRunMins = 0.0d;
-    vars.fullRunSecs = 0.0d;
-    vars.fullRunMils = 0.0d;
-    vars.doStart = false;
- 
-  vars.deltCharaX = 0.0d;
-  vars.deltCharaY = 0.0d;
- 
-  vars.frameChanged = false;
-  */
+	/*
+	Based on: http://pastebin.com/wLFaSEEE
+	We should probably set up a Github or something for this stuff. - D
+	*/
+    settings.Add("enablePosText", false, "Show Position/Speed/Screen in top 3 Text Elements");
 }
  
 init
@@ -53,36 +47,14 @@ init
   vars.txtSPD = null;
   vars.txtSPDOriginal = "";
  
- 
-  //FIXME
-  /*
-  foreach (LiveSplit.UI.Components.LayoutComponent lc in vars.layoutComponents) {
-    if (lc.ToString().StartsWith("_FP_POS")) {
-      vars.comp = lc.Component;
-      if (vars.comp != null && vars.comp.GetType().GetMethod("Settings") != null) {
-      vars.txtPOS = vars.comp.Settings;
-      vars.txtPOSOriginal =   vars.txtPOS.Text1;
-      break;
-      }
-    }
+  if (settings["enablePosText"]) {
+    vars.txtPOS = vars.layoutComponents[0].Component.Settings;
+    vars.txtPOSOriginal = vars.txtPOS.Text1;
+    vars.txtSPD = vars.layoutComponents[1].Component.Settings;
+    vars.txtSPDOriginal = vars.txtSPD.Text1;
+    vars.txtSCRN = vars.layoutComponents[2].Component.Settings;
+    vars.txtSCRNOriginal = vars.txtSCRN.Text1;
   }
- 
-  foreach (LiveSplit.UI.Components.ILayoutComponent lc in vars.layoutComponents) {
-    if (lc.ToString().StartsWith("_FP_SPD")) {
-      vars.comp = lc.Component;
-      if (vars.comp != null && vars.comp.GetType().GetMethod("Settings") != null) {
-        vars.txtSPD = vars.comp.Settings;
-      break;
-      }
-    }
-  }*/
- 
-  vars.txtPOS = vars.layoutComponents[0].Component.Settings;
-  vars.txtPOSOriginal = vars.txtPOS.Text1;
-  vars.txtSPD = vars.layoutComponents[1].Component.Settings;
-  vars.txtSPDOriginal = vars.txtSPD.Text1;
-  vars.txtSCRN = vars.layoutComponents[2].Component.Settings;
-  vars.txtSCRNOriginal = vars.txtSCRN.Text1;
  
   //print("@@@" + "vars.txtPOS: " + vars.txtPOS.ToString() + "\nvars.txtSPD: " + vars.txtSPD.ToString()+ "@@@");
 }
@@ -110,6 +82,7 @@ if (current.charX != null
   vars.timerWasReset = (old.minutes > 0  && current.minutes == 0 && current.seconds == 0 && current.milliseconds <= 50);
  
   // Update text displays
+  if (settings["enablePosText"]) {
   if (vars.txtPOS != null
       && vars.txtPOS.Text1 is String) {
     vars.txtPOS.Text1 = "(X,Y): ("
@@ -129,6 +102,7 @@ if (current.charX != null
   if (vars.txtSCRN != null
     && vars.txtSCRN.Text1 is String) {
     vars.txtSCRN.Text1 = "Screen ID: " + String.Format("{0:0}", current.frame);
+  }
   }
  
   // Always reset these:
