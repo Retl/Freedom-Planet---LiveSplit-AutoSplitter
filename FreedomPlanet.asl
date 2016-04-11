@@ -303,7 +303,8 @@ update
 
 	// If Enabled, Triggers AutoStart/Split/Reset.
     vars.splitPlz = vars.tallyChanged;
-    vars.resetPlz = (current.frame == 3 && old.frame != 3);
+    vars.resetPlz = ((current.frame == 3 && old.frame != 3) ||
+					(current.frame == 5 && old.frame != 5));
     vars.startPlz = (current.frame != 3 && current.minutes == 0 
 		&& current.seconds == 0 && current.milliseconds <= 90 
 		&& current.milliseconds > 0);
@@ -314,8 +315,8 @@ update
 exit
 {
 	// Triggers when FP.exe is closed.
-    vars.InitializeVars();
-	vars.RestoreTextFields();
+    vars.RestoreTextFields();
+	vars.InitializeVars();
 }
 
 shutdown
