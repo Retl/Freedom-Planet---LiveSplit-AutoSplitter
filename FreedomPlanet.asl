@@ -30,242 +30,350 @@ state("FP", "1.20.4")
 
 startup
 {
-    settings.Add("enablePosText", false, "Show Position/Speed/Screen in top 3 Text Elements");
+    vars.tokenFPPOS = "_FP_POS";
+    vars.tokenFPSPD = "_FP_SPD";
+    vars.tokenFPSCRN = "_FP_SCRN";
+    vars.tokenFPSTAL = "_FP_TAL";
+
+    settings.Add("enablePOSText", false, "Replace a Text Component starting with \"" + vars.tokenFPPOS + "\" with Position information.");
+    settings.Add("enableSPDText", false, "Replace a Text Component starting with \"" + vars.tokenFPSPD + "\" with (estimated) Velocity information.");
+    settings.Add("enableSCRNText", false, "Replace a Text Component starting with \"" + vars.tokenFPSCRN + "\" with the Screen ID Number.");
     // settings.Add("setVersion-1-20-4", false, "Enable this if playing version 1.20.4");
 }
 
 init
 {
-  // Detect Version
-  vars.fp_size_1_20_6 = 32583680;
-  vars.fp_size_1_20_4 = 32362496;
+    // Define useful Methods
+    vars.InitializeVars = new Action (() =>
+    {
+        // Version Detection
+        vars.fp_size_1_20_6 = 32583680;
+        vars.fp_size_1_20_4 = 32362496;
 
-  version = "UNKNOWN";
-  print("@@@@@ MODULE SIZE: " + modules.First().ModuleMemorySize.ToString());
-  if (modules.First().ModuleMemorySize == vars.fp_size_1_20_6)
-      version = "1.20.6";
-  else if (modules.First().ModuleMemorySize == vars.fp_size_1_20_4)
-      version = "1.20.4";
+        // Other userful vars.
+        vars.playerpos = "";
+        vars.fullRunMins = 0.0d;
+        vars.fullRunSecs = 0.0d;
+        vars.fullRunMils = 0.0d;
 
-  print("@@@@@ Detected Version: " + version);
+        vars.timeSpanTally = new TimeSpan(0);
 
-  // Init other vars after hooking the game.
-  vars.playerpos = "";
-  vars.fullRunMins = 0.0d;
-  vars.fullRunSecs = 0.0d;
-  vars.fullRunMils = 0.0d;
+        // String tokens to identify text fields to replace.
+        vars.tokenFPPOS = "_FP_POS";
+        vars.tokenFPSPD = "_FP_SPD";
+        vars.tokenFPSCRN = "_FP_SCRN";
+        vars.tokenFPSTAL = "_FP_TAL";
 
-  vars.timeSpanTally = new TimeSpan(0);
+		// For displaying Output, if enabled.
+		vars.txtWhich = -1;
+		
+		vars.txtPOS = null;
+		vars.txtPOSWhich = -1;
+        vars.txtPOSOriginal = "";
 
-  vars.tokenFPPOS = "_FP_POS";
-  vars.tokenFPSPD = "_FP_SPD";
-  vars.tokenFPSCRN = "_FP_SCRN";
-  vars.tokenFPSTAL = "_FP_TAL";
+		vars.txtSPD = null;
+		vars.txtSPDWhich = -1;
+        vars.txtSPDOriginal = "";
 
-  vars.arrTimes = System.Collections.ArrayList.Repeat(null, 150);
+		vars.txtSCRN = null;
+		vars.txtSCRNWhich = -1;
+        vars.txtSCRNOriginal = "";
 
-  vars.calcStageTallies = new Func<int, TimeSpan>((int cutoffScreen) =>
-  {
-    //Placeholder.
-    TimeSpan result = new TimeSpan(0);
-    for (int i = 0; (i < vars.arrTimes.Count && i <= cutoffScreen); i++) {
-      if (vars.arrTimes[i] != null) {
-        result += vars.arrTimes[i];
-        print("Individual Tally["+ i.ToString() +"]: " + vars.arrTimes[i].ToString());
-      }
-      else
-      {
-        print("Individual Tally["+ i.ToString() +"]: is null!");
-      }
-    }
-    print("Calculating Stage Tallies: " + result.ToString());
-    return result;
-  });
+        // Contain the running tally of TimeSpans for each Frame/Screen with Results Screen
+        vars.arrTimes = System.Collections.ArrayList.Repeat(null, 150);
 
-  vars.locateDefaultTexts = new Func<bool>(() =>
-  {
-    bool result = true;
-	try {
-	// Get Text Fields to Show Variables In:
-	vars.openForms = Application.OpenForms;
-	vars.activeForm = vars.openForms[0];
-	vars.layout = vars.openForms[0].Layout;
-	vars.layoutComponents = vars.layout.LayoutComponents;
-	vars.txtOut = "";
-	vars.comp = null;
-	vars.txtPOS = null;
-	vars.txtPOSOriginal = "";
-	vars.txtSPD = null;
-	vars.txtSPDOriginal = "";
-	vars.txtSCRN = null;
-	vars.txtSCRNOriginal = "";
+        // For triggering AutoStart/ Split / Reset.
+        vars.startPlz = false;
+        vars.splitPlz = false;
+        vars.resetPlz = false;
 
-	if (settings["enablePosText"]) {
-		vars.txtPOS = vars.layoutComponents[0].Component.Settings;
-		vars.txtPOSOriginal = vars.txtPOS.Text1;
-		vars.txtSPD = vars.layoutComponents[1].Component.Settings;
-		vars.txtSPDOriginal = vars.txtSPD.Text1;
-		vars.txtSCRN = vars.layoutComponents[2].Component.Settings;
-		vars.txtSCRNOriginal = vars.txtSCRN.Text1;
-	  }
-	}
-	catch (Exception e) { result = false;}
+        vars.started = false;
 
-    return result;
-  });
-  vars.locateDefaultTexts();
+        // For rough estimate of character velocity.
+        vars.deltCharaX = 0.0d;
+        vars.deltCharaY = 0.0d;
+        vars.deltCharaMagnitude = 0.0d;
 
-  vars.doStart = false;
+        // Indicates if Results Tally just appeared.
+        vars.tallyChanged = false;
+        vars.postTally = false; // Tally was shown, but on same Frame/Screen.
 
-  vars.deltCharaX = 0.0d;
-  vars.deltCharaY = 0.0d;
-  vars.deltCharaMagnitude = 0.0d;
+        // For tracking the current Frame/Screen.
+        vars.frameChanged = false;
+        vars.frameChangedSinceTimerZero = false;
+        vars.lastFrameSinceTimerZero = 0;
+    });
+    vars.InitializeVars();
 
-  vars.tallyChanged = false;
+    vars.DetectVersion = new Action (() => 
+	{
+        version = "UNKNOWN";
+        print("@@@@@ MODULE SIZE: " + modules.First().ModuleMemorySize.ToString());
+        if (modules.First().ModuleMemorySize == vars.fp_size_1_20_6)
+            version = "1.20.6";
+        else if (modules.First().ModuleMemorySize == vars.fp_size_1_20_4)
+            version = "1.20.4";
+        print("@@@@@ Detected Version: " + version);
+    });
+    vars.DetectVersion();
 
-  vars.frameChanged = false;
-  vars.frameChangedSinceTimerZero = false;
-  vars.lastFrameSinceTimerZero = 0;
+    vars.CalcStageTallies = new Func<int, TimeSpan>((int cutoffScreen) =>
+	{
+		TimeSpan result = new TimeSpan(0);
+		for (int i = 0; (i < vars.arrTimes.Count && i <= cutoffScreen); i++)
+		{
+			if (vars.arrTimes[i] != null)
+			{
+				result += vars.arrTimes[i];
+				print("Individual Tally[" + i.ToString() + "]: " + vars.arrTimes[i].ToString());
+			}
+			else
+			{
+				print("Individual Tally[" + i.ToString() + "]: is null!");
+			}
+		}
+		print("Calculating Stage Tallies: " + result.ToString());
+		return result;
+	});
 
-  //print("@@@" + "vars.txtPOS: " + vars.txtPOS.ToString() + "\nvars.txtSPD: " + vars.txtSPD.ToString()+ "@@@");
+    vars.RestoreTextFields = new Action (() =>
+	{
+        if (settings["enablePOSText"])
+        {
+            vars.SetTextComponentText(vars.txtPOS, vars.txtPOSWhich, vars.txtPOSOriginal);
+        }
+        if (settings["enableSPDText"])
+        {
+            vars.SetTextComponentText(vars.txtSPD, vars.txtSPDWhich, vars.txtSPDOriginal);
+        }
+        if (settings["enableSCRNText"])
+        {
+            vars.SetTextComponentText(vars.txtSCRN, vars.txtSCRNWhich, vars.txtSCRNOriginal);
+        }
+    });
+
+    vars.FindTextComponentByToken = new Func<String, dynamic>((String tokenToReplace) =>
+    {
+		vars.txtWhich = -1;
+        dynamic foundTxtComponent = null;
+        foreach (LiveSplit.UI.Components.LayoutComponent lc in vars.layoutComponents)
+        {
+            if (lc.Component.GetType().ToString() == "LiveSplit.UI.Components.TextComponent")
+            {
+                vars.comp = lc.Component;
+                if (true)
+                {
+                    if (vars.comp.Settings.Text1.ToUpper().StartsWith(tokenToReplace.ToUpper()))
+                    {
+                        foundTxtComponent = vars.comp.Settings;
+                        vars.txtWhich = 1; // Hack
+                        break;
+                    }
+                    else if (vars.comp.Settings.Text2.ToUpper().StartsWith(tokenToReplace.ToUpper()))
+                    {
+                        foundTxtComponent = vars.comp.Settings;
+                        vars.txtWhich = 2; // Hack
+                        break;
+                    }
+                    else { vars.txtWhich = -1; }
+                }
+            }
+        }
+		return foundTxtComponent;
+	});
+
+		vars.GetTextComponentText = new Func<dynamic, int, String>((dynamic textComponent, int whichText) =>
+		{
+			if (whichText == 1) {return textComponent.Text1;}
+			else if (whichText == 2) {return textComponent.Text2;}
+			else {return "Not found.";}
+		});
+
+		vars.SetTextComponentText = new Func<dynamic, int, String, bool>((dynamic textComponent, int whichText, String newString) =>
+		{
+			if (whichText == 1) {textComponent.Text1 = newString;}
+			else if (whichText == 2) {textComponent.Text2 = newString;}
+			return true;
+		});
+
+    vars.locateDefaultTexts = new Action (() =>
+    {
+        bool result = true;
+        try
+        {
+            // Get Text Fields to Show Variables In:
+            vars.openForms = Application.OpenForms;
+            vars.mainForm = vars.openForms[0];
+            vars.layout = vars.mainForm.Layout;
+            vars.layoutComponents = vars.layout.LayoutComponents;
+
+            vars.comp = null;
+
+            // TODO: Refactor Component ref + WhichTextNum + Original Text into ExpandoObjects
+            // TODO: Refactor into new method instead of copypasta nightmare.
+            if (settings["enablePOSText"])
+            {
+                vars.txtPOS = vars.FindTextComponentByToken(vars.tokenFPPOS);
+                vars.txtPOSWhich = vars.txtWhich;
+                if (vars.txtPOSWhich > -1)
+                {
+					vars.txtPOSOriginal = vars.GetTextComponentText(vars.txtPOS, vars.txtPOSWhich);
+                }
+            }
+
+            if (settings["enableSPDText"])
+            {
+                vars.txtSPD = vars.FindTextComponentByToken(vars.tokenFPSPD);
+                vars.txtSPDWhich = vars.txtWhich;
+                if (vars.txtSPDWhich > -1)
+                {
+                    vars.txtSPDOriginal = vars.GetTextComponentText(vars.txtSPD, vars.txtSPDWhich);
+                }
+            }
+
+            if (settings["enableSCRNText"])
+            {
+                vars.txtSCRN = vars.FindTextComponentByToken(vars.tokenFPSCRN);
+                vars.txtSCRNWhich = vars.txtWhich;
+                if (vars.txtSCRNWhich > -1)
+                {
+                    vars.txtSCRNOriginal = vars.GetTextComponentText(vars.txtSCRN, vars.txtSCRNWhich);
+                }
+            }
+
+
+        }
+        catch (Exception e) { result = false; }
+    });
+    vars.locateDefaultTexts();
 }
 
 update
 {
-// Calculate additional values based on game state.
-if (current.charX != null
-    && current.charY != null
-    && old.charX != null
-    && old.charY != null)
-  {
-    vars.deltCharaX = current.charX - old.charX;
-    vars.deltCharaY = current.charY - old.charY;
-    vars.deltCharaMagnitude = current.charY - old.charY;
-  }
-
-  vars.tallyChanged = (current.tally != old.tally && current.tally != 0);
-  if (vars.tallyChanged) {print("@@@@@Tally Changed: " + vars.tallyChanged.ToString());}
-  vars.frameChanged = (current.frame != old.frame && (current.frame != 0 && current.frame != -1));
-
-  if (vars.frameChanged) {
-    vars.frameChangedSinceTimerZero = true;
-    vars.lastFrameSinceTimerZero = old.frame;
-  }
-
-  vars.timerWasReset = (old.minutes > 0  && current.minutes == 0 && current.seconds == 0 && current.milliseconds <= 50);
-
-  // Update text displays
-  if (settings["enablePosText"]) {
-  if (vars.txtPOS != null
-      && vars.txtPOS.Text1 is String) {
-    vars.txtPOS.Text1 = "(X,Y): ("
-      + String.Format("{0:0.000}", current.charX)
-      + "," + String.Format("{0:0.000}", current.charY)
-      + ")";
-  }
-
-  if (vars.txtSPD != null
-      && vars.txtSPD.Text1 is String) {
-    vars.txtSPD.Text1 = "(XSPD,YSPD): ("
-      + String.Format("{0:0.000}", vars.deltCharaX)
-      + "," + String.Format("{0:0.000}", vars.deltCharaY)
-      + ")";
-  }
-
-
-  if (vars.txtSCRN != null
-    && vars.txtSCRN.Text1 is String) {
-      vars.txtSCRN.Text1 = "Screen ID: " + String.Format("{0:0}", current.frame);
+    // Calculate additional values based on game state.
+    if (current.charX != null
+        && current.charY != null
+        && old.charX != null
+        && old.charY != null)
+    {
+        vars.deltCharaX = current.charX - old.charX;
+        vars.deltCharaY = current.charY - old.charY;
+        vars.deltCharaMagnitude = current.charY - old.charY;
     }
-  }
 
-  // Always reset these:
+    vars.tallyChanged = (current.tally != old.tally && current.tally != 0);
+    if (vars.tallyChanged) { print("@@@@@Tally Changed: " + vars.tallyChanged.ToString()); }
+    vars.frameChanged = (current.frame != old.frame && (current.frame != 0 && current.frame != -1));
 
-  vars.splitPlz = false;
+    if (vars.frameChanged)
+    {
+        vars.frameChangedSinceTimerZero = true;
+        vars.lastFrameSinceTimerZero = old.frame;
+		vars.postTally = false;
+		print("Frame Changed!");
+    }
 
+    vars.timerWasReset = (old.minutes > 0 && current.minutes == 0 && current.seconds == 0 && current.milliseconds <= 50);
+
+    // Update text displays
+    if (settings["enablePOSText"] && vars.txtPOS != null)
+    {
+         String posTxt = "(X,Y): ("
+            + String.Format("{0:0.000}", current.charX)
+            + "," + String.Format("{0:0.000}", current.charY)
+            + ")";
+
+			vars.SetTextComponentText(vars.txtPOS, vars.txtPOSWhich, posTxt);
+    }
+
+    if (settings["enableSPDText"] && vars.txtSPD != null)
+    {
+        String spdTxt = "(XSPD,YSPD): ("
+            + String.Format("{0:0.000}", vars.deltCharaX)
+            + "," + String.Format("{0:0.000}", vars.deltCharaY)
+            + ")";
+			vars.SetTextComponentText(vars.txtSPD, vars.txtSPDWhich, spdTxt);
+    }
+
+    if (settings["enableSCRNText"] && vars.txtSCRN != null)
+    {
+        String scrnTxt = "Screen ID: " + String.Format("{0:0}", current.frame);
+		vars.SetTextComponentText(vars.txtSCRN, vars.txtSCRNWhich, scrnTxt);
+    }
+
+	// If Enabled, Triggers AutoStart/Split/Reset.
+    vars.splitPlz = vars.tallyChanged;
+    vars.resetPlz = (current.frame == 3 && old.frame != 3);
+    vars.startPlz = (current.frame != 3 && current.minutes == 0 
+		&& current.seconds == 0 && current.milliseconds <= 90 
+		&& current.milliseconds > 0);
+
+    if (vars.frameChanged) { vars.started = false; }
 }
 
 exit
 {
-    vars.playerpos = "";
-    vars.fullRunMins = 0.0d;
-    vars.fullRunSecs = 0.0d;
-    vars.fullRunMils = 0.0d;
-    vars.doStart = false;
-
-  vars.txtPOS.Text1 = vars.txtPOSOriginal;
-  vars.txtSPD.Text1 = vars.txtSPDOriginal;
-  vars.txtSCRN.Text1 = vars.txtSCRNOriginal;
+	// Triggers when FP.exe is closed.
+    vars.InitializeVars();
+	vars.RestoreTextFields();
 }
 
 shutdown
 {
-    vars.playerpos = "";
-    vars.fullRunMins = 0.0d;
-    vars.fullRunSecs = 0.0d;
-    vars.fullRunMils = 0.0d;
-    vars.doStart = false;
+	// Triggers when Scriptable AutoSplit Component removed or LiveSplit closed.
+    vars.InitializeVars();
 }
 
 start
 {
-    return (current.frame != 3 && current.minutes == 0 && current.seconds == 0 && current.milliseconds <= 90 && current.milliseconds > 0);
+    // Runs every tick: AutoStart the Timer when the Timer goes from 0 to less than one second.
+    if (vars.startPlz && !vars.started)
+    {
+        vars.started = true;
+        return true;
+    }
+    return false;
 }
 
 reset
 {
-  if (current.frame == 3)
-    vars.fullRunMins = 0.0d;
-    vars.fullRunSecs = 0.0d;
-    vars.fullRunMils = 0.0d;
-  return (vars.frameChanged && (current.frame == 3));
+	// Runs every tick: AutoReset the Timer on the Main Menu.
+    if (vars.resetPlz)
+    {
+        vars.InitializeVars();
+    }
+    return vars.resetPlz;
 }
+
 split
 {
-  /*
-  if (vars.timerWasReset
-  && vars.frameChangedSinceTimerZero
-  && (
-      vars.lastFrameSinceTimerZero == 19
-      || vars.lastFrameSinceTimerZero == 23
-      || vars.lastFrameSinceTimerZero == 28
-      || vars.lastFrameSinceTimerZero == 34
-      || vars.lastFrameSinceTimerZero == 38
-      || vars.lastFrameSinceTimerZero == 43
-      || vars.lastFrameSinceTimerZero == 49
-      || vars.lastFrameSinceTimerZero == 55
-      || vars.lastFrameSinceTimerZero == 58
-      || vars.lastFrameSinceTimerZero == 64
-      || vars.lastFrameSinceTimerZero == 66
-      || vars.lastFrameSinceTimerZero == 68
-      || vars.lastFrameSinceTimerZero == 70
-      )
-    ) {
-  vars.fullRunMins += old.minutes;
-  vars.fullRunSecs += old.seconds;
-  vars.fullRunMils += old.milliseconds;
-  vars.frameChangedSinceTimerZero = false;
-  vars.splitPlz = true;
-  vars.lastFrameSinceTimerZero = 0;
-  }*/
-
-  if (vars.tallyChanged) {
-    vars.splitPlz = true;
-    vars.arrTimes[current.frame] = new TimeSpan(0, 0, Convert.ToInt32(current.minutes), Convert.ToInt32(current.seconds), Convert.ToInt32((current.milliseconds) * 10));
-    vars.timeSpanTally = vars.calcStageTallies(current.frame);
-  }
-
-    return(vars.splitPlz);
+	// Split just before the Results Tally is Displayed.
+    if (vars.tallyChanged)
+    {
+        vars.postTally = true;
+        vars.arrTimes[current.frame] = new TimeSpan(0, 0, Convert.ToInt32(current.minutes), Convert.ToInt32(current.seconds), Convert.ToInt32((current.milliseconds) * 10));
+        vars.timeSpanTally = vars.CalcStageTallies(current.frame);
+    }
+    return (vars.splitPlz);
 }
 
 isLoading
 {
-    return true;
+    return true; // Disable time interpolation.
 }
 
 gameTime
 {
-    //return(new TimeSpan(0, 0, Convert.ToInt32(vars.fullRunMins + current.minutes), Convert.ToInt32(vars.fullRunSecs + current.seconds), Convert.ToInt32((vars.fullRunMils + current.milliseconds) * 10)));
-
-    return(vars.timeSpanTally + (new TimeSpan(0, 0, Convert.ToInt32(current.minutes), Convert.ToInt32(current.seconds), Convert.ToInt32((current.milliseconds) * 10))));
+	// Runs every tick: Sets the Game Time for the LiveSplit Timer.
+    TimeSpan gt;
+    if (vars.postTally)
+    {
+		// Don't display the sum until moving to a new Frame/Screen.
+        gt = vars.timeSpanTally;
+    }
+    else
+    {
+        gt = (vars.timeSpanTally + (new TimeSpan(0, 0, Convert.ToInt32(current.minutes), Convert.ToInt32(current.seconds), Convert.ToInt32((current.milliseconds) * 10))));
+    }
+    return gt;
 }
