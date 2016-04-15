@@ -50,8 +50,10 @@ init
         vars.fp_size_1_20_6 = 32583680;
         vars.fp_size_1_20_4 = 32362496;
 
+		// Version Dependant
+		vars.frameIdFortuneNightEnd = 34;
+
         // Other userful vars.
-        vars.playerpos = "";
         vars.fullRunMins = 0.0d;
         vars.fullRunSecs = 0.0d;
         vars.fullRunMils = 0.0d;
@@ -80,7 +82,7 @@ init
         vars.txtSCRNOriginal = "";
 
         // Contain the running tally of TimeSpans for each Frame/Screen with Results Screen
-        vars.arrTimes = System.Collections.ArrayList.Repeat(null, 150);
+        vars.arrTimes = System.Collections.ArrayList.Repeat(null, 90);
 
         // For triggering AutoStart/ Split / Reset.
         vars.startPlz = false;
@@ -102,6 +104,7 @@ init
         vars.frameChanged = false;
         vars.frameChangedSinceTimerZero = false;
         vars.lastFrameSinceTimerZero = 0;
+		vars.lastNonZeroTime = 0;
     });
     vars.InitializeVars();
 
@@ -251,6 +254,8 @@ init
 update
 {
     // Calculate additional values based on game state.
+	if (current.igtPure > 0) {vars.lastNonZeroTime = current.igtPure;}
+
     if (current.charX != null
         && current.charY != null
         && old.charX != null
@@ -270,7 +275,7 @@ update
         vars.frameChangedSinceTimerZero = true;
         vars.lastFrameSinceTimerZero = old.frame;
 		vars.postTally = false;
-		print("Frame Changed!");
+		print("Frame Changed: " + old.frame + " => " + current.frame );
     }
 
     vars.timerWasReset = (old.minutes > 0 && current.minutes == 0 && current.seconds == 0 && current.milliseconds <= 50);
@@ -352,9 +357,16 @@ split
     if (vars.tallyChanged)
     {
         vars.postTally = true;
-        vars.arrTimes[current.frame] = new TimeSpan(0, 0, Convert.ToInt32(current.minutes), Convert.ToInt32(current.seconds), Convert.ToInt32((current.milliseconds) * 10));
+        //vars.arrTimes[current.frame] = new TimeSpan(0, 0, Convert.ToInt32(current.minutes), Convert.ToInt32(current.seconds), Convert.ToInt32((current.milliseconds) * 10));
+		vars.arrTimes[current.frame] = TimeSpan.FromMilliseconds(current.igtPure - 0);
         vars.timeSpanTally = vars.CalcStageTallies(current.frame);
     }
+	else if (old.frame == vars.frameIdFortuneNightEnd && current.frame != old.frame) 
+	{
+		print("FORTUNE NIGHT SPLIT.");
+		vars.arrTimes[old.frame] = TimeSpan.FromMilliseconds(vars.lastNonZeroTime);
+		vars.timeSpanTally = vars.CalcStageTallies(old.frame);
+	}
     return (vars.splitPlz);
 }
 
@@ -374,7 +386,7 @@ gameTime
     }
     else
     {
-        gt = (vars.timeSpanTally + (new TimeSpan(0, 0, Convert.ToInt32(current.minutes), Convert.ToInt32(current.seconds), Convert.ToInt32((current.milliseconds) * 10))));
+        gt = (vars.timeSpanTally + TimeSpan.FromMilliseconds(current.igtPure - 17));
     }
     return gt;
 }
