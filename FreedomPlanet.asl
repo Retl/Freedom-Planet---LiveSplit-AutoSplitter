@@ -58,7 +58,8 @@ init
         vars.fullRunSecs = 0.0d;
         vars.fullRunMils = 0.0d;
 
-        vars.timeSpanTally = new TimeSpan(0);
+        vars.timeSpanTally = TimeSpan.Zero;
+		vars.onScreenTime = TimeSpan.Zero;
 
         // String tokens to identify text fields to replace.
         vars.tokenFPPOS = "_FP_POS";
@@ -122,7 +123,7 @@ init
 
     vars.CalcStageTallies = new Func<int, TimeSpan>((int cutoffScreen) =>
 	{
-		TimeSpan result = new TimeSpan(0);
+		TimeSpan result = TimeSpan.Zero;
 		for (int i = 0; (i < vars.arrTimes.Count && i <= cutoffScreen); i++)
 		{
 			if (vars.arrTimes[i] != null)
@@ -253,8 +254,9 @@ init
 
 update
 {
+	vars.onScreenTime = new TimeSpan(0, 0, Convert.ToInt32(current.minutes), Convert.ToInt32(current.seconds), Convert.ToInt32((current.milliseconds) * 10));
     // Calculate additional values based on game state.
-	if (current.igtPure > 0) {vars.lastNonZeroTime = current.igtPure;}
+	if (vars.onScreenTime > TimeSpan.Zero) {vars.lastNonZeroTime = vars.onScreenTime;}
 
     if (current.charX != null
         && current.charY != null
@@ -357,15 +359,15 @@ split
     if (vars.tallyChanged)
     {
         vars.postTally = true;
-        //vars.arrTimes[current.frame] = new TimeSpan(0, 0, Convert.ToInt32(current.minutes), Convert.ToInt32(current.seconds), Convert.ToInt32((current.milliseconds) * 10));
-		vars.arrTimes[current.frame] = TimeSpan.FromMilliseconds(current.igtPure - 0);
+		vars.arrTimes[current.frame] = vars.onScreenTime;
         vars.timeSpanTally = vars.CalcStageTallies(current.frame);
     }
 	else if (old.frame == vars.frameIdFortuneNightEnd && current.frame != old.frame) 
 	{
 		print("FORTUNE NIGHT SPLIT.");
-		vars.arrTimes[old.frame] = TimeSpan.FromMilliseconds(vars.lastNonZeroTime);
+		vars.arrTimes[old.frame] = vars.lastNonZeroTime;
 		vars.timeSpanTally = vars.CalcStageTallies(old.frame);
+		vars.splitPlz = true;
 	}
     return (vars.splitPlz);
 }
@@ -386,7 +388,7 @@ gameTime
     }
     else
     {
-        gt = (vars.timeSpanTally + TimeSpan.FromMilliseconds(current.igtPure - 17));
+		gt = (vars.timeSpanTally + (vars.onScreenTime));
     }
     return gt;
 }
