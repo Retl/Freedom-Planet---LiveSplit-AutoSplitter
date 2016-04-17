@@ -33,7 +33,6 @@ startup
     vars.tokenFPPOS = "_FP_POS";
     vars.tokenFPSPD = "_FP_SPD";
     vars.tokenFPSCRN = "_FP_SCRN";
-    vars.tokenFPSTAL = "_FP_TAL";
 
     settings.Add("enablePOSText", false, "Replace a Text Component starting with \"" + vars.tokenFPPOS + "\" with Position information.");
     settings.Add("enableSPDText", false, "Replace a Text Component starting with \"" + vars.tokenFPSPD + "\" with (estimated) Velocity information.");
@@ -50,8 +49,8 @@ init
         vars.fp_size_1_20_6 = 32583680;
         vars.fp_size_1_20_4 = 32362496;
 
-		// Version Dependant
-		vars.frameIdFortuneNightEnd = 34;
+	// Version Dependant
+	vars.frameIdFortuneNightEnd = 34;
 
         // Other userful vars.
         vars.fullRunMins = 0.0d;
@@ -59,28 +58,27 @@ init
         vars.fullRunMils = 0.0d;
 
         vars.timeSpanTally = TimeSpan.Zero;
-		vars.onScreenTime = TimeSpan.Zero;
+	vars.onScreenTime = TimeSpan.Zero;
 
         // String tokens to identify text fields to replace.
         vars.tokenFPPOS = "_FP_POS";
         vars.tokenFPSPD = "_FP_SPD";
         vars.tokenFPSCRN = "_FP_SCRN";
-        vars.tokenFPSTAL = "_FP_TAL";
 
-		// For displaying Output, if enabled.
-		vars.txtWhich = -1;
-		
-		vars.txtPOS = null;
-		vars.txtPOSWhich = -1;
-        vars.txtPOSOriginal = "";
+	// For displaying Output, if enabled.
+	vars.txtWhich = -1;
+	
+	vars.txtPOS = null;
+	vars.txtPOSWhich = -1;
+	vars.txtPOSOriginal = "";
 
-		vars.txtSPD = null;
-		vars.txtSPDWhich = -1;
-        vars.txtSPDOriginal = "";
+	vars.txtSPD = null;
+	vars.txtSPDWhich = -1;
+v	ars.txtSPDOriginal = "";
 
-		vars.txtSCRN = null;
-		vars.txtSCRNWhich = -1;
-        vars.txtSCRNOriginal = "";
+	vars.txtSCRN = null;
+	vars.txtSCRNWhich = -1;
+	vars.txtSCRNOriginal = "";
 
         // Contain the running tally of TimeSpans for each Frame/Screen with Results Screen
         vars.arrTimes = System.Collections.ArrayList.Repeat(null, 90);
@@ -105,7 +103,7 @@ init
         vars.frameChanged = false;
         vars.frameChangedSinceTimerZero = false;
         vars.lastFrameSinceTimerZero = 0;
-		vars.lastNonZeroTime = 0;
+	vars.lastNonZeroTime = 0;
     });
     vars.InitializeVars();
 
