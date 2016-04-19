@@ -74,7 +74,7 @@ init
 
 	vars.txtSPD = null;
 	vars.txtSPDWhich = -1;
-v	ars.txtSPDOriginal = "";
+	vars.txtSPDOriginal = "";
 
 	vars.txtSCRN = null;
 	vars.txtSCRNWhich = -1;
