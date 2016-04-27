@@ -346,9 +346,11 @@ reset
 	// Runs every tick: AutoReset the Timer on the Main Menu.
     if (vars.resetPlz)
     {
+        print("Performing reset.");
         vars.InitializeVars();
+        return true;
     }
-    return vars.resetPlz;
+    return false;
 }
 
 split
