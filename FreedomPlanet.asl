@@ -310,10 +310,15 @@ update
     vars.splitPlz = vars.tallyChanged;
     vars.resetPlz = ((current.frame == 3 && old.frame != 3) ||
 					(current.frame == 5 && old.frame != 5));
+					/*
     vars.startPlz = (current.frame != 3 && current.minutes == 0 
 		&& current.seconds == 0 && current.milliseconds <= 90 
 		&& current.milliseconds > 0);
 
+		*/
+	//timer starts when either Dragon Valley or Aqua Tunnel first screens are loaded out of the character select.
+	//note that this doesn't work for Adventure Mode, because of the cutscenes.
+	vars.startPlz = ((old.frame == 6) && (current.frame == 20 || current.frame == 16));
     if (vars.frameChanged) { vars.started = false; }
 }
 
