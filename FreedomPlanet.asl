@@ -399,7 +399,7 @@ gameTime
 		gt = (vars.timeSpanTally + (vars.onScreenTime));
     }
 	
-	//I hope this works as a way to add the estimated bonus from milliseconds.
+	//When the run ends, add 0.06 seconds to estimate the final time, because of the milliseconds.
 	//ending cutscene = 85
 	if(current.frame == 85 && old.frame != 85)
 		gt = vars.timeSpanTally + new TimeSpan(0, 0,0, 0, 6 * 10); 
