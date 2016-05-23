@@ -307,9 +307,10 @@ update
     }
 
 	// If Enabled, Triggers AutoStart/Split/Reset.
-    vars.splitPlz = vars.tallyChanged;
-    vars.resetPlz = ((current.frame == 3 && old.frame != 3) ||
-					(current.frame == 5 && old.frame != 5));
+	//screen 87 = credits
+	
+    vars.splitPlz = (vars.tallyChanged || ((current.frame == 3) && (old.frame == 87)));
+    vars.resetPlz = (current.frame == 3 && old.frame != 87);
 					/*
     vars.startPlz = (current.frame != 3 && current.minutes == 0 
 		&& current.seconds == 0 && current.milliseconds <= 90 
@@ -317,8 +318,10 @@ update
 
 		*/
 	//timer starts when either Dragon Valley or Aqua Tunnel first screens are loaded out of the character select.
-	//note that this doesn't work for Adventure Mode, because of the cutscenes.
-	vars.startPlz = ((old.frame == 6) && (current.frame == 20 || current.frame == 16));
+	//ID 83 = Brevon Ship Crash cutscene (for Adventure Mode)
+	vars.startPlz = ((old.frame == 6) && (current.frame == 20 || current.frame == 16 || current.frame == 83)
+	//The next comparison makes this compatible with Adventure Mode on 1.20.x
+	|| (old.frame == 3 && current.frame == 83));
     if (vars.frameChanged) { vars.started = false; }
 }
 
@@ -395,5 +398,11 @@ gameTime
     {
 		gt = (vars.timeSpanTally + (vars.onScreenTime));
     }
+	
+	//I hope this works as a way to add the estimated bonus from milliseconds.
+	//ending cutscene = 85
+	if(current.frame == 85 && old.frame != 85)
+		gt = vars.timeSpanTally + new TimeSpan(0, 0,0, 0, 6 * 10); 
+		
     return gt;
 }
