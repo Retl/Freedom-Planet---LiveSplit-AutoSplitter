@@ -254,7 +254,7 @@ update
 {
 	vars.onScreenTime = new TimeSpan(0, 0, Convert.ToInt32(current.minutes), Convert.ToInt32(current.seconds), Convert.ToInt32((current.milliseconds) * 10));
     // Calculate additional values based on game state.
-	if (vars.onScreenTime > TimeSpan.Zero) {vars.lastNonZeroTime = vars.onScreenTime;}
+	if (vars.onScreenTime != TimeSpan.Zero) {vars.lastNonZeroTime = vars.onScreenTime;}
 
     if (current.charX != null
         && current.charY != null
@@ -278,7 +278,7 @@ update
 		print("Frame Changed: " + old.frame + " => " + current.frame );
     }
 
-    vars.timerWasReset = (old.minutes > 0 && current.minutes == 0 && current.seconds == 0 && current.milliseconds <= 50);
+    //vars.timerWasReset = (old.minutes > 0 && current.minutes == 0 && current.seconds == 0 && current.milliseconds <= 50);
 
     // Update text displays
     if (settings["enablePOSText"] && vars.txtPOS != null)
@@ -309,8 +309,8 @@ update
 	// If Enabled, Triggers AutoStart/Split/Reset.
 	//screen 87 = credits
 	
-    vars.splitPlz = (vars.tallyChanged || ((current.frame == 3) && (old.frame == 87)));
-    vars.resetPlz = (current.frame == 3 && old.frame != 87);
+    vars.splitPlz = vars.tallyChanged;
+    vars.resetPlz = (current.frame == 3 && old.frame != 3);
 					/*
     vars.startPlz = (current.frame != 3 && current.minutes == 0 
 		&& current.seconds == 0 && current.milliseconds <= 90 
@@ -364,17 +364,25 @@ reset
 split
 {
 	// Split just before the Results Tally is Displayed.
+	int alt = old.frame;
     if (vars.tallyChanged)
     {
         vars.postTally = true;
 		vars.arrTimes[current.frame] = vars.onScreenTime;
         vars.timeSpanTally = vars.CalcStageTallies(current.frame);
     }
-	else if (old.frame == vars.frameIdFortuneNightEnd && current.frame != old.frame) 
+	else if (alt == vars.frameIdFortuneNightEnd && current.frame == 8)
+	/*
+	for FN, the split happens after the screen transition happened.
+	so the split process has 2 parts, one for each screen transition.
+	*/
 	{
 		print("FORTUNE NIGHT SPLIT.");
-		vars.arrTimes[old.frame] = vars.lastNonZeroTime;
-		vars.timeSpanTally = vars.CalcStageTallies(old.frame);
+		vars.arrTimes[alt] = vars.lastNonZeroTime;
+		vars.timeSpanTally = vars.CalcStageTallies(alt+1);
+		
+	}
+	else if (alt == 8 && current.frame == 35){
 		vars.splitPlz = true;
 	}
     return (vars.splitPlz);
@@ -389,6 +397,7 @@ gameTime
 {
 	// Runs every tick: Sets the Game Time for the LiveSplit Timer.
     TimeSpan gt;
+	
     if (vars.postTally)
     {
 		// Don't display the sum until moving to a new Frame/Screen.
@@ -401,8 +410,8 @@ gameTime
 	
 	//When the run ends, add 0.06 seconds to estimate the final time, because of the milliseconds.
 	//ending cutscene = 85
-	if(current.frame == 85 && old.frame != 85)
-		gt = vars.timeSpanTally + new TimeSpan(0, 0,0, 0, 6 * 10); 
-		
+	if(current.frame == 85)
+		gt += new TimeSpan(0, 0,0, 0, 6 * 10); 
+	
     return gt;
 }
