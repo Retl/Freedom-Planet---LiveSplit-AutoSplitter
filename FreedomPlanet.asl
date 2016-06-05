@@ -122,7 +122,7 @@ init
     vars.CalcStageTallies = new Func<int, TimeSpan>((int cutoffScreen) =>
 	{
 		TimeSpan result = TimeSpan.Zero;
-		for (int i = 0; (i < vars.arrTimes.Count && i <= cutoffScreen); i++)
+		for (int i = 0; (i < vars.arrTimes.Count); i++)
 		{
 			if (vars.arrTimes[i] != null)
 			{
