@@ -1,7 +1,7 @@
 state("FP", "1.20.6")
 {
     int frame : "FP.exe", 0x1DD4D50;
-    double igtPure : "FP.exe", 0x1D7AC18;
+    double igtPure : "FP.exe", 0x1DA02E0;
     double tally : "FP.exe", 0x1DA0280;
     double altTally : "FP.exe", 0x1DA0268;
 
@@ -37,7 +37,6 @@ startup
     settings.Add("enablePOSText", false, "Replace a Text Component starting with \"" + vars.tokenFPPOS + "\" with Position information.");
     settings.Add("enableSPDText", false, "Replace a Text Component starting with \"" + vars.tokenFPSPD + "\" with (estimated) Velocity information.");
     settings.Add("enableSCRNText", false, "Replace a Text Component starting with \"" + vars.tokenFPSCRN + "\" with the Screen ID Number.");
-    // settings.Add("setVersion-1-20-4", false, "Enable this if playing version 1.20.4");
 }
 
 init
@@ -49,8 +48,8 @@ init
         vars.fp_size_1_20_6 = 32583680;
         vars.fp_size_1_20_4 = 32362496;
 
-	// Version Dependant
-	vars.frameIdFortuneNightEnd = 34;
+        // Version Dependant
+        vars.frameIdFortuneNightEnd = 34;
 
         // Other userful vars.
         vars.fullRunMins = 0.0d;
@@ -58,27 +57,28 @@ init
         vars.fullRunMils = 0.0d;
 
         vars.timeSpanTally = TimeSpan.Zero;
-	vars.onScreenTime = TimeSpan.Zero;
+	      vars.onScreenTime = TimeSpan.Zero;
+        vars.igtMod = TimeSpan.Zero;
 
         // String tokens to identify text fields to replace.
         vars.tokenFPPOS = "_FP_POS";
         vars.tokenFPSPD = "_FP_SPD";
         vars.tokenFPSCRN = "_FP_SCRN";
 
-	// For displaying Output, if enabled.
-	vars.txtWhich = -1;
-	
-	vars.txtPOS = null;
-	vars.txtPOSWhich = -1;
-	vars.txtPOSOriginal = "";
-
-	vars.txtSPD = null;
-	vars.txtSPDWhich = -1;
-	vars.txtSPDOriginal = "";
-
-	vars.txtSCRN = null;
-	vars.txtSCRNWhich = -1;
-	vars.txtSCRNOriginal = "";
+        // For displaying Output, if enabled.
+        vars.txtWhich = -1;
+        
+        vars.txtPOS = null;
+        vars.txtPOSWhich = -1;
+        vars.txtPOSOriginal = "";
+      
+        vars.txtSPD = null;
+        vars.txtSPDWhich = -1;
+        vars.txtSPDOriginal = "";
+      
+        vars.txtSCRN = null;
+        vars.txtSCRNWhich = -1;
+        vars.txtSCRNOriginal = "";
 
         // Contain the running tally of TimeSpans for each Frame/Screen with Results Screen
         vars.arrTimes = System.Collections.ArrayList.Repeat(null, 90);
@@ -103,7 +103,7 @@ init
         vars.frameChanged = false;
         vars.frameChangedSinceTimerZero = false;
         vars.lastFrameSinceTimerZero = 0;
-	vars.lastNonZeroTime = 0;
+      	vars.lastNonZeroTime = TimeSpan.Zero;
     });
     vars.InitializeVars();
 
@@ -118,7 +118,7 @@ init
         print("@@@@@ Detected Version: " + version);
     });
     vars.DetectVersion();
-
+    
     vars.CalcStageTallies = new Func<int, TimeSpan>((int cutoffScreen) =>
 	{
 		TimeSpan result = TimeSpan.Zero;
@@ -219,7 +219,7 @@ init
                 vars.txtPOSWhich = vars.txtWhich;
                 if (vars.txtPOSWhich > -1)
                 {
-					vars.txtPOSOriginal = vars.GetTextComponentText(vars.txtPOS, vars.txtPOSWhich);
+				        	vars.txtPOSOriginal = vars.GetTextComponentText(vars.txtPOS, vars.txtPOSWhich);
                 }
             }
 
@@ -229,7 +229,7 @@ init
                 vars.txtSPDWhich = vars.txtWhich;
                 if (vars.txtSPDWhich > -1)
                 {
-                    vars.txtSPDOriginal = vars.GetTextComponentText(vars.txtSPD, vars.txtSPDWhich);
+                  vars.txtSPDOriginal = vars.GetTextComponentText(vars.txtSPD, vars.txtSPDWhich);
                 }
             }
 
@@ -253,17 +253,18 @@ init
 update
 {
 	vars.onScreenTime = new TimeSpan(0, 0, Convert.ToInt32(current.minutes), Convert.ToInt32(current.seconds), Convert.ToInt32((current.milliseconds) * 10));
+  vars.igtMod = TimeSpan.FromMilliseconds(current.igtPure - 17);
     // Calculate additional values based on game state.
-	if (vars.onScreenTime != TimeSpan.Zero) {vars.lastNonZeroTime = vars.onScreenTime;}
+	if (vars.igtMod != TimeSpan.Zero) {vars.lastNonZeroTime = vars.igtMod;}
 
     if (current.charX != null
         && current.charY != null
         && old.charX != null
         && old.charY != null)
     {
-        vars.deltCharaX = current.charX - old.charX;
-        vars.deltCharaY = current.charY - old.charY;
-        vars.deltCharaMagnitude = current.charY - old.charY;
+      vars.deltCharaX = current.charX - old.charX;
+      vars.deltCharaY = current.charY - old.charY;
+      vars.deltCharaMagnitude = current.charY - old.charY;
     }
 
     vars.tallyChanged = (current.tally != old.tally && current.tally != 0);
@@ -272,10 +273,10 @@ update
 
     if (vars.frameChanged)
     {
-        vars.frameChangedSinceTimerZero = true;
-        vars.lastFrameSinceTimerZero = old.frame;
-		vars.postTally = false;
-		print("Frame Changed: " + old.frame + " => " + current.frame );
+      vars.frameChangedSinceTimerZero = true;
+      vars.lastFrameSinceTimerZero = old.frame;
+		  vars.postTally = false;
+		  print("Frame Changed: " + old.frame + " => " + current.frame );
     }
 
     //vars.timerWasReset = (old.minutes > 0 && current.minutes == 0 && current.seconds == 0 && current.milliseconds <= 50);
@@ -283,7 +284,7 @@ update
     // Update text displays
     if (settings["enablePOSText"] && vars.txtPOS != null)
     {
-         String posTxt = "(X,Y): ("
+      String posTxt = "(X,Y): ("
             + String.Format("{0:0.000}", current.charX)
             + "," + String.Format("{0:0.000}", current.charY)
             + ")";
@@ -293,7 +294,7 @@ update
 
     if (settings["enableSPDText"] && vars.txtSPD != null)
     {
-        String spdTxt = "(XSPD,YSPD): ("
+      String spdTxt = "(XSPD,YSPD): ("
             + String.Format("{0:0.000}", vars.deltCharaX)
             + "," + String.Format("{0:0.000}", vars.deltCharaY)
             + ")";
@@ -302,8 +303,8 @@ update
 
     if (settings["enableSCRNText"] && vars.txtSCRN != null)
     {
-        String scrnTxt = "Screen ID: " + String.Format("{0:0}", current.frame);
-		vars.SetTextComponentText(vars.txtSCRN, vars.txtSCRNWhich, scrnTxt);
+      String scrnTxt = "Screen ID: " + String.Format("{0:0}", current.frame);
+		  vars.SetTextComponentText(vars.txtSCRN, vars.txtSCRNWhich, scrnTxt);
     }
 
 	// If Enabled, Triggers AutoStart/Split/Reset.
@@ -328,7 +329,7 @@ update
 exit
 {
 	// Triggers when FP.exe is closed.
-    vars.RestoreTextFields();
+  vars.RestoreTextFields();
 	vars.InitializeVars();
 }
 
@@ -368,7 +369,7 @@ split
     if (vars.tallyChanged)
     {
         vars.postTally = true;
-		vars.arrTimes[current.frame] = vars.onScreenTime;
+		vars.arrTimes[current.frame] = vars.igtMod;
         vars.timeSpanTally = vars.CalcStageTallies(current.frame);
     }
 	else if (alt == vars.frameIdFortuneNightEnd && current.frame == 8)
@@ -405,13 +406,13 @@ gameTime
     }
     else
     {
-		gt = (vars.timeSpanTally + (vars.onScreenTime));
+		gt = (vars.timeSpanTally + (vars.igtMod));
     }
 	
 	//When the run ends, add 0.06 seconds to estimate the final time, because of the milliseconds.
 	//ending cutscene = 85
-	if(current.frame == 85)
-		gt += new TimeSpan(0, 0,0, 0, 6 * 10); 
+	//if(current.frame == 85)
+		//gt += new TimeSpan(0, 0, 0, 0, 6 * 10); 
 	
     return gt;
 }
