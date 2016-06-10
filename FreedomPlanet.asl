@@ -1,7 +1,7 @@
 state("FP", "1.20.6")
 {
     int frame : "FP.exe", 0x1DD4D50;
-    double igtPure : "FP.exe", 0x1D7AC18;
+    double igtPure : "FP.exe", 0x1DA02E0;
     double tally : "FP.exe", 0x1DA0280;
     double altTally : "FP.exe", 0x1DA0268;
 
@@ -37,7 +37,6 @@ startup
     settings.Add("enablePOSText", false, "Replace a Text Component starting with \"" + vars.tokenFPPOS + "\" with Position information.");
     settings.Add("enableSPDText", false, "Replace a Text Component starting with \"" + vars.tokenFPSPD + "\" with (estimated) Velocity information.");
     settings.Add("enableSCRNText", false, "Replace a Text Component starting with \"" + vars.tokenFPSCRN + "\" with the Screen ID Number.");
-    // settings.Add("setVersion-1-20-4", false, "Enable this if playing version 1.20.4");
 }
 
 init
@@ -49,36 +48,40 @@ init
         vars.fp_size_1_20_6 = 32583680;
         vars.fp_size_1_20_4 = 32362496;
 
-	// Version Dependant
-	vars.frameIdFortuneNightEnd = 34;
+		// For Fortune Night split
+
 
         // Other userful vars.
         vars.fullRunMins = 0.0d;
         vars.fullRunSecs = 0.0d;
         vars.fullRunMils = 0.0d;
 
+		// Displays and calculates timers
+		// onScreenTime is the timer on screen (2 digit precision)
+		// igtPure is the real timer (3 digit precision)
         vars.timeSpanTally = TimeSpan.Zero;
-	vars.onScreenTime = TimeSpan.Zero;
+		vars.onScreenTime = TimeSpan.Zero;
+		vars.igtPure = TimeSpan.Zero;	
 
         // String tokens to identify text fields to replace.
         vars.tokenFPPOS = "_FP_POS";
         vars.tokenFPSPD = "_FP_SPD";
         vars.tokenFPSCRN = "_FP_SCRN";
 
-	// For displaying Output, if enabled.
-	vars.txtWhich = -1;
+		// For displaying Output, if enabled.
+		vars.txtWhich = -1;
 	
-	vars.txtPOS = null;
-	vars.txtPOSWhich = -1;
-	vars.txtPOSOriginal = "";
+		vars.txtPOS = null;
+		vars.txtPOSWhich = -1;
+		vars.txtPOSOriginal = "";
 
-	vars.txtSPD = null;
-	vars.txtSPDWhich = -1;
-	vars.txtSPDOriginal = "";
+		vars.txtSPD = null;
+		vars.txtSPDWhich = -1;
+		vars.txtSPDOriginal = "";
 
-	vars.txtSCRN = null;
-	vars.txtSCRNWhich = -1;
-	vars.txtSCRNOriginal = "";
+		vars.txtSCRN = null;
+		vars.txtSCRNWhich = -1;
+		vars.txtSCRNOriginal = "";
 
         // Contain the running tally of TimeSpans for each Frame/Screen with Results Screen
         vars.arrTimes = System.Collections.ArrayList.Repeat(null, 90);
@@ -93,7 +96,6 @@ init
         // For rough estimate of character velocity.
         vars.deltCharaX = 0.0d;
         vars.deltCharaY = 0.0d;
-        vars.deltCharaMagnitude = 0.0d;
 
         // Indicates if Results Tally just appeared.
         vars.tallyChanged = false;
@@ -101,12 +103,16 @@ init
 
         // For tracking the current Frame/Screen.
         vars.frameChanged = false;
-        vars.frameChangedSinceTimerZero = false;
-        vars.lastFrameSinceTimerZero = 0;
-	vars.lastNonZeroTime = 0;
-	vars.lastNonZeroScreen = 0;
-	//FortuneNightSplit exists to deal with the FN split oddity (it uses a different tally pointer for some reason).
-	vars.FortuneNightSplit = false;
+		vars.lastNonZeroTime = TimeSpan.Zero;
+		//lastNonZeroScreen is the latest non-zero value of igtPure
+		//which prevents the igt segment timer from randomly zeroing in some cases
+		vars.lastNonZeroScreen = TimeSpan.Zero;
+		//lastNonZeroMod prevents splits from zeroing at the end
+		vars.lastNonZeroMod = TimeSpan.Zero;
+		
+		//FortuneNightSplit exists to deal with the FN split oddity (it uses a different tally pointer for some reason).
+		vars.FortuneNightSplit = false;
+		vars.frameIdFortuneNightEnd = 34;
     });
     vars.InitializeVars();
 
@@ -122,6 +128,8 @@ init
     });
     vars.DetectVersion();
 
+	
+	//Sums the values in arrTimes
     vars.CalcStageTallies = new Func <TimeSpan>(() =>
 	{
 		TimeSpan result = TimeSpan.Zero;
@@ -256,9 +264,12 @@ init
 update
 {
 	vars.onScreenTime = new TimeSpan(0, 0, Convert.ToInt32(current.minutes), Convert.ToInt32(current.seconds), Convert.ToInt32((current.milliseconds) * 10));
-    // Calculate additional values based on game state.
-	if (vars.onScreenTime != TimeSpan.Zero) {vars.lastNonZeroTime = vars.onScreenTime;}
+    vars.igtMod = TimeSpan.FromMilliseconds(current.igtPure);
 
+	// Calculate additional values based on game state.
+	if (vars.onScreenTime != TimeSpan.Zero) {vars.lastNonZeroTime = vars.onScreenTime;}
+	if (vars.igtMod != TimeSpan.Zero) vars.lastNonZeroMod = vars.igtMod;
+	//Calculates character velocity
     if (current.charX != null
         && current.charY != null
         && old.charX != null
@@ -266,8 +277,10 @@ update
     {
         vars.deltCharaX = current.charX - old.charX;
         vars.deltCharaY = current.charY - old.charY;
-        vars.deltCharaMagnitude = current.charY - old.charY;
     }
+	
+	//lastNonZeroScreen is zeroed if the Fortune Night split is in progress.
+	//this prevents the segment split from being doubled.
 	if((current.tally != old.tally && current.tally == 0) || vars.FortuneNightSplit) {vars.lastNonZeroScreen = TimeSpan.Zero;}
 	else {vars.lastNonZeroScreen = vars.lastNonZeroTime;}
 	
@@ -277,15 +290,12 @@ update
 
     if (vars.frameChanged)
     {
-        vars.frameChangedSinceTimerZero = true;
-        vars.lastFrameSinceTimerZero = old.frame;
 		vars.postTally = false;
 		print("Frame Changed: " + old.frame + " => " + current.frame );
     }
 
-    //vars.timerWasReset = (old.minutes > 0 && current.minutes == 0 && current.seconds == 0 && current.milliseconds <= 50);
 
-    // Update text displays
+    // Update position display
     if (settings["enablePOSText"] && vars.txtPOS != null)
     {
          String posTxt = "(X,Y): ("
@@ -296,6 +306,7 @@ update
 			vars.SetTextComponentText(vars.txtPOS, vars.txtPOSWhich, posTxt);
     }
 
+	// Update speed display
     if (settings["enableSPDText"] && vars.txtSPD != null)
     {
         String spdTxt = "(XSPD,YSPD): ("
@@ -305,6 +316,7 @@ update
 			vars.SetTextComponentText(vars.txtSPD, vars.txtSPDWhich, spdTxt);
     }
 
+	//Update screen ID display
     if (settings["enableSCRNText"] && vars.txtSCRN != null)
     {
         String scrnTxt = "Screen ID: " + String.Format("{0:0}", current.frame);
@@ -312,21 +324,16 @@ update
     }
 
 	// If Enabled, Triggers AutoStart/Split/Reset.
-	//screen 87 = credits
 	
     vars.splitPlz = vars.tallyChanged;
     vars.resetPlz = (current.frame == 3 && old.frame != 3);
-					/*
-    vars.startPlz = (current.frame != 3 && current.minutes == 0 
-		&& current.seconds == 0 && current.milliseconds <= 90 
-		&& current.milliseconds > 0);
 
-		*/
-	//timer starts when either Dragon Valley or Aqua Tunnel first screens are loaded out of the character select.
+	//Timer starts when either Dragon Valley or Aqua Tunnel first screens are loaded out of the character select.
 	//ID 83 = Brevon Ship Crash cutscene (for Adventure Mode)
 	vars.startPlz = ((old.frame == 6) && (current.frame == 20 || current.frame == 16 || current.frame == 83)
 	//The next comparison makes this compatible with Adventure Mode on 1.20.x
 	|| (old.frame == 3 && current.frame == 83));
+	
     if (vars.frameChanged) { vars.started = false; }
 }
 
@@ -374,7 +381,7 @@ split
     if (vars.tallyChanged)
     {
         vars.postTally = true;
-		vars.arrTimes[alt] = vars.lastNonZeroTime;
+		vars.arrTimes[alt] = vars.lastNonZeroMod;
         vars.timeSpanTally = vars.CalcStageTallies();
     }
 	else if (alt == vars.frameIdFortuneNightEnd && current.frame == 8)
@@ -384,10 +391,11 @@ split
 	*/
 	{
 		print("FORTUNE NIGHT SPLIT.");
-		vars.arrTimes[alt] = vars.lastNonZeroTime;
+		vars.arrTimes[alt] = vars.lastNonZeroMod;
 		vars.timeSpanTally = vars.CalcStageTallies();
 		vars.FortuneNightSplit = true;
 	}
+	//8 = black screen for stage transition and 35 = Sky Battalion first screen
 	else if (alt == 8 && current.frame == 35){
 		vars.FortuneNightSplit = false;
 		vars.splitPlz = true;
@@ -402,13 +410,6 @@ isLoading
 
 gameTime
 {
-	//ugly workaround for the Fortune Night split
-	/*
-	if(vars.FortuneNightSplit) {
-		vars.lastNonZeroScreen = TimeSpan.Zero;
-
-	}
-	*/
 	// Runs every tick: Sets the Game Time for the LiveSplit Timer.
     TimeSpan gt;
 	
@@ -422,10 +423,5 @@ gameTime
 		gt = (vars.timeSpanTally + (vars.lastNonZeroScreen));
     }
 
-	//When the run ends, add 0.06 seconds to estimate the final time, because of the milliseconds.
-	//ending cutscene = 85
-	if(current.frame == 85)
-		gt += new TimeSpan(0, 0,0, 0, 6 * 10); 
-	
     return gt;
 }
