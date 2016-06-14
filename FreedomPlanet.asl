@@ -3,7 +3,6 @@ state("FP", "1.20.6")
     int frame : "FP.exe", 0x1DD4D50;
     double igtPure : "FP.exe", 0x1DA02E0;
     double tally : "FP.exe", 0x1DA0280;
-    double altTally : "FP.exe", 0x1DA0268;
 
     double minutes : "FP.exe", 0x01DD7E20, 0x68;
     double seconds : "FP.exe", 0x01DD7DE0, 0x68;
@@ -18,7 +17,6 @@ state("FP", "1.20.4")
     int frame : "FP.exe", 0x1DAE338;
     double igtPure : "FP.exe", 0x1D7AC18;
     double tally : "FP.exe", 0x1D7ABB8;
-    double altTally : "FP.exe", 0x1D7ABA0;
 
     double minutes : "FP.exe", 0x01DB13A8, 0x68; // milli offset + 0x80
     double seconds : "FP.exe", 0x01DB1368, 0x68; // milli offset + 0x40
@@ -47,9 +45,6 @@ init
         // Version Detection
         vars.fp_size_1_20_6 = 32583680;
         vars.fp_size_1_20_4 = 32362496;
-
-		// For Fortune Night split
-
 
         // Other userful vars.
         vars.fullRunMins = 0.0d;
@@ -104,11 +99,10 @@ init
         // For tracking the current Frame/Screen.
         vars.frameChanged = false;
 		vars.lastNonZeroTime = TimeSpan.Zero;
+		
 		//lastNonZeroScreen is the latest non-zero value of igtPure
 		//which prevents the igt segment timer from randomly zeroing in some cases
 		vars.lastNonZeroScreen = TimeSpan.Zero;
-		//lastNonZeroMod prevents splits from zeroing at the end
-		vars.lastNonZeroMod = TimeSpan.Zero;
 		
 		//FortuneNightSplit exists to deal with the FN split oddity (it uses a different tally pointer for some reason).
 		vars.FortuneNightSplit = false;
@@ -139,11 +133,11 @@ init
 			{
 				result += vars.arrTimes[i];
 				print("Individual Tally[" + i.ToString() + "]: " + vars.arrTimes[i].ToString());
-			}
+			}/*
 			else
 			{
 				print("Individual Tally[" + i.ToString() + "]: is null!");
-			}
+			}*/
 		}
 		print("Calculating Stage Tallies: " + result.ToString());
 		return result;
@@ -264,11 +258,14 @@ init
 update
 {
 	vars.onScreenTime = new TimeSpan(0, 0, Convert.ToInt32(current.minutes), Convert.ToInt32(current.seconds), Convert.ToInt32((current.milliseconds) * 10));
-    vars.igtMod = TimeSpan.FromMilliseconds(current.igtPure);
-
+    //vars.igtMod = TimeSpan.FromMilliseconds(current.igtPure);
+	
+	
 	// Calculate additional values based on game state.
-	if (vars.onScreenTime != TimeSpan.Zero) {vars.lastNonZeroTime = vars.onScreenTime;}
-	if (vars.igtMod != TimeSpan.Zero) vars.lastNonZeroMod = vars.igtMod;
+	if (vars.onScreenTime != TimeSpan.Zero) {
+		vars.lastNonZeroTime = vars.onScreenTime;
+	}
+
 	//Calculates character velocity
     if (current.charX != null
         && current.charY != null
@@ -279,21 +276,31 @@ update
         vars.deltCharaY = current.charY - old.charY;
     }
 	
-	//lastNonZeroScreen is zeroed if the Fortune Night split is in progress.
-	//this prevents the segment split from being doubled.
-	if((current.tally != old.tally && current.tally == 0) || vars.FortuneNightSplit) {vars.lastNonZeroScreen = TimeSpan.Zero;}
-	else {vars.lastNonZeroScreen = vars.lastNonZeroTime;}
-	
+
     vars.tallyChanged = (current.tally != old.tally && current.tally != 0);
+	//vars.tallyChanged = (old.tally == TimeSpan.Zero && current.tally != 0);
     if (vars.tallyChanged) { print("@@@@@Tally Changed: " + vars.tallyChanged.ToString()); }
     vars.frameChanged = (current.frame != old.frame && (current.frame != 0 && current.frame != -1));
 
     if (vars.frameChanged)
     {
-		vars.postTally = false;
-		print("Frame Changed: " + old.frame + " => " + current.frame );
+		//vars.postTally = false;
+		print("Frame Changed: " + old.frame + " => " + current.frame);
     }
 
+		//lastNonZeroScreen is zeroed if the Fortune Night split is in progress.
+	//this prevents the segment split from being doubled.
+	if((vars.postTally && vars.frameChanged) || vars.FortuneNightSplit) {
+		print("nonzeroscreen has been reset");
+		vars.lastNonZeroScreen = TimeSpan.Zero;
+		//Prevents splits from being temporarily duplicated when a new stage begins
+		vars.lastNonZeroTime = TimeSpan.Zero;
+		vars.postTally = false;
+	}
+	else{
+		vars.lastNonZeroScreen = vars.lastNonZeroTime;
+		}
+	
 
     // Update position display
     if (settings["enablePOSText"] && vars.txtPOS != null)
@@ -335,6 +342,13 @@ update
 	|| (old.frame == 3 && current.frame == 83));
 	
     if (vars.frameChanged) { vars.started = false; }
+	
+	//fix attempt: only update igtMod in specific situations, as FromMilliseconds is an intensive function
+	if(vars.tallyChanged||(current.frame==vars.frameIdFortuneNightEnd && current.milliseconds == old.milliseconds)){
+		vars.igtMod = TimeSpan.FromMilliseconds(current.igtPure);
+		print("igtmod has been updated:" + vars.igtMod.ToString());
+	}
+
 }
 
 exit
@@ -381,7 +395,7 @@ split
     if (vars.tallyChanged)
     {
         vars.postTally = true;
-		vars.arrTimes[alt] = vars.lastNonZeroMod;
+		vars.arrTimes[alt] = vars.igtMod;
         vars.timeSpanTally = vars.CalcStageTallies();
     }
 	else if (alt == vars.frameIdFortuneNightEnd && current.frame == 8)
@@ -391,7 +405,7 @@ split
 	*/
 	{
 		print("FORTUNE NIGHT SPLIT.");
-		vars.arrTimes[alt] = vars.lastNonZeroMod;
+		vars.arrTimes[alt] = vars.igtMod;
 		vars.timeSpanTally = vars.CalcStageTallies();
 		vars.FortuneNightSplit = true;
 	}
@@ -420,7 +434,7 @@ gameTime
     }
     else
     {
-		gt = (vars.timeSpanTally + (vars.lastNonZeroScreen));
+		gt = vars.timeSpanTally + vars.lastNonZeroScreen;
     }
 
     return gt;
