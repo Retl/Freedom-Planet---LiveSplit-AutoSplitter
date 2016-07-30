@@ -1,13 +1,15 @@
 state("FP", "1.20.6")
 {
-    int frame : "FP.exe", 0x1DD4D50;
-    double igtPure : "FP.exe", 0x1DA02E0;
-    double tally : "FP.exe", 0x1DA0280;
+    int frame : "FP.exe", 0x1DD4D50; //Current Screen ID
+    double igtPure : "FP.exe", 0x1D7AC18; //In-game timer with milliseconds; it's used for splits
+    double tally : "FP.exe", 0x1DA0280; //Timer at the end of the stage, in milliseconds
 
+	//Indicates individual level timer on screen
     double minutes : "FP.exe", 0x01DD7E20, 0x68;
     double seconds : "FP.exe", 0x01DD7DE0, 0x68;
     double milliseconds : "FP.exe", 0x01DD7DA0, 0x68;
 
+	//Indicates character position
     double charX : "FP.exe", 0x1DA0A70;
     double charY : "FP.exe", 0x1DA0A78;
 }
@@ -17,9 +19,10 @@ state("FP", "1.20.4")
     int frame : "FP.exe", 0x1DAE338;
     double igtPure : "FP.exe", 0x1D7AC18;
     double tally : "FP.exe", 0x1D7ABB8;
+    double altTally : "FP.exe", 0x1D7ABA0;
 
-    double minutes : "FP.exe", 0x01DB13A8, 0x68; // milli offset + 0x80
-    double seconds : "FP.exe", 0x01DB1368, 0x68; // milli offset + 0x40
+    double minutes : "FP.exe", 0x01DB13A8, 0x68; 
+    double seconds : "FP.exe", 0x01DB1368, 0x68;
     double milliseconds : "FP.exe", 0x01DB1328, 0x68;
 
     double charX : "FP.exe", 0x1D7BC08;
@@ -28,6 +31,7 @@ state("FP", "1.20.4")
 
 startup
 {
+	//Tokens for additional menu options
     vars.tokenFPPOS = "_FP_POS";
     vars.tokenFPSPD = "_FP_SPD";
     vars.tokenFPSCRN = "_FP_SCRN";
@@ -46,17 +50,16 @@ init
         vars.fp_size_1_20_6 = 32583680;
         vars.fp_size_1_20_4 = 32362496;
 
+		// Version Dependant
+		vars.frameIdFortuneNightEnd = 34;
+
         // Other userful vars.
         vars.fullRunMins = 0.0d;
         vars.fullRunSecs = 0.0d;
         vars.fullRunMils = 0.0d;
 
-		// Displays and calculates timers
-		// onScreenTime is the timer on screen (2 digit precision)
-		// igtPure is the real timer (3 digit precision)
         vars.timeSpanTally = TimeSpan.Zero;
 		vars.onScreenTime = TimeSpan.Zero;
-		vars.igtPure = TimeSpan.Zero;	
 
         // String tokens to identify text fields to replace.
         vars.tokenFPPOS = "_FP_POS";
@@ -91,6 +94,7 @@ init
         // For rough estimate of character velocity.
         vars.deltCharaX = 0.0d;
         vars.deltCharaY = 0.0d;
+        vars.deltCharaMagnitude = 0.0d;
 
         // Indicates if Results Tally just appeared.
         vars.tallyChanged = false;
@@ -98,18 +102,20 @@ init
 
         // For tracking the current Frame/Screen.
         vars.frameChanged = false;
-		vars.lastNonZeroTime = TimeSpan.Zero;
+        vars.frameChangedSinceTimerZero = false;
+        vars.lastFrameSinceTimerZero = 0;
 		
-		//lastNonZeroScreen is the latest non-zero value of igtPure
-		//which prevents the igt segment timer from randomly zeroing in some cases
-		vars.lastNonZeroScreen = TimeSpan.Zero;
-		
-		//FortuneNightSplit exists to deal with the FN split oddity (it uses a different tally pointer for some reason).
+		//Auxiliar timers to make the game timer consistent
+		vars.lastNonZeroTime = 0;
+		vars.lastNonZeroScreen = 0;
+		vars.igtMod = TimeSpan.Zero;
+	
+		//FortuneNightSplit exists to deal with the FN split workaround (it's dinamically allocated)
 		vars.FortuneNightSplit = false;
-		vars.frameIdFortuneNightEnd = 34;
     });
     vars.InitializeVars();
 
+	//Detects the current game version, to use the appropriate memory values
     vars.DetectVersion = new Action (() => 
 	{
         version = "UNKNOWN";
@@ -122,8 +128,7 @@ init
     });
     vars.DetectVersion();
 
-	
-	//Sums the values in arrTimes
+	//Stores individual level times in an array to calculate the full game run time
     vars.CalcStageTallies = new Func <TimeSpan>(() =>
 	{
 		TimeSpan result = TimeSpan.Zero;
@@ -133,16 +138,17 @@ init
 			{
 				result += vars.arrTimes[i];
 				print("Individual Tally[" + i.ToString() + "]: " + vars.arrTimes[i].ToString());
-			}/*
+			}
 			else
 			{
 				print("Individual Tally[" + i.ToString() + "]: is null!");
-			}*/
+			}
 		}
 		print("Calculating Stage Tallies: " + result.ToString());
 		return result;
 	});
 
+	//Restores the original text fields when the game or the script is closed.
     vars.RestoreTextFields = new Action (() =>
 	{
         if (settings["enablePOSText"])
@@ -257,16 +263,11 @@ init
 
 update
 {
+	//Calculate the main timer based on current level timer
 	vars.onScreenTime = new TimeSpan(0, 0, Convert.ToInt32(current.minutes), Convert.ToInt32(current.seconds), Convert.ToInt32((current.milliseconds) * 10));
-    //vars.igtMod = TimeSpan.FromMilliseconds(current.igtPure);
 	
-	
-	// Calculate additional values based on game state.
-	if (vars.onScreenTime != TimeSpan.Zero) {
-		vars.lastNonZeroTime = vars.onScreenTime;
-	}
+    //Calculate additional values based on game state.
 
-	//Calculates character velocity
     if (current.charX != null
         && current.charY != null
         && old.charX != null
@@ -274,35 +275,31 @@ update
     {
         vars.deltCharaX = current.charX - old.charX;
         vars.deltCharaY = current.charY - old.charY;
+        vars.deltCharaMagnitude = current.charY - old.charY;
     }
 	
-
+	//Calculate auxiliar timers.
+	if (vars.onScreenTime != TimeSpan.Zero) {vars.lastNonZeroTime = vars.onScreenTime;}
+	
+	if((current.tally != old.tally && current.tally == 0) || vars.FortuneNightSplit) {vars.lastNonZeroScreen = TimeSpan.Zero;}
+	else {vars.lastNonZeroScreen = vars.lastNonZeroTime;}
+	
+	//Detects tally and frame changes, main referece for splitting
     vars.tallyChanged = (current.tally != old.tally && current.tally != 0);
-	//vars.tallyChanged = (old.tally == TimeSpan.Zero && current.tally != 0);
     if (vars.tallyChanged) { print("@@@@@Tally Changed: " + vars.tallyChanged.ToString()); }
     vars.frameChanged = (current.frame != old.frame && (current.frame != 0 && current.frame != -1));
 
+
     if (vars.frameChanged)
     {
-		//vars.postTally = false;
-		print("Frame Changed: " + old.frame + " => " + current.frame);
+        vars.frameChangedSinceTimerZero = true;
+        vars.lastFrameSinceTimerZero = old.frame;
+		vars.postTally = false;
+		print("Frame Changed: " + old.frame + " => " + current.frame );
     }
 
-		//lastNonZeroScreen is zeroed if the Fortune Night split is in progress.
-	//this prevents the segment split from being doubled.
-	if((vars.postTally && vars.frameChanged) || vars.FortuneNightSplit) {
-		print("nonzeroscreen has been reset");
-		vars.lastNonZeroScreen = TimeSpan.Zero;
-		//Prevents splits from being temporarily duplicated when a new stage begins
-		vars.lastNonZeroTime = TimeSpan.Zero;
-		vars.postTally = false;
-	}
-	else{
-		vars.lastNonZeroScreen = vars.lastNonZeroTime;
-		}
-	
 
-    // Update position display
+    // Update text displays
     if (settings["enablePOSText"] && vars.txtPOS != null)
     {
          String posTxt = "(X,Y): ("
@@ -313,7 +310,6 @@ update
 			vars.SetTextComponentText(vars.txtPOS, vars.txtPOSWhich, posTxt);
     }
 
-	// Update speed display
     if (settings["enableSPDText"] && vars.txtSPD != null)
     {
         String spdTxt = "(XSPD,YSPD): ("
@@ -323,32 +319,30 @@ update
 			vars.SetTextComponentText(vars.txtSPD, vars.txtSPDWhich, spdTxt);
     }
 
-	//Update screen ID display
     if (settings["enableSCRNText"] && vars.txtSCRN != null)
     {
         String scrnTxt = "Screen ID: " + String.Format("{0:0}", current.frame);
 		vars.SetTextComponentText(vars.txtSCRN, vars.txtSCRNWhich, scrnTxt);
     }
 
-	// If Enabled, Triggers AutoStart/Split/Reset.
+	//Uses tally and frame changes to check out for splits or resets
+
 	
     vars.splitPlz = vars.tallyChanged;
     vars.resetPlz = (current.frame == 3 && old.frame != 3);
 
-	//Timer starts when either Dragon Valley or Aqua Tunnel first screens are loaded out of the character select.
+	//timer starts when either Dragon Valley (20) or Aqua Tunnel (16) first screens are loaded out of the character select for full game run (6).
 	//ID 83 = Brevon Ship Crash cutscene (for Adventure Mode)
 	vars.startPlz = ((old.frame == 6) && (current.frame == 20 || current.frame == 16 || current.frame == 83)
 	//The next comparison makes this compatible with Adventure Mode on 1.20.x
 	|| (old.frame == 3 && current.frame == 83));
-	
     if (vars.frameChanged) { vars.started = false; }
 	
-	//fix attempt: only update igtMod in specific situations, as FromMilliseconds is an intensive function
+	//Update the timer used for the splits, only when necessary
 	if(vars.tallyChanged||(current.frame==vars.frameIdFortuneNightEnd && current.milliseconds == old.milliseconds)){
-		vars.igtMod = TimeSpan.FromMilliseconds(current.igtPure);
-		print("igtmod has been updated:" + vars.igtMod.ToString());
+	vars.igtMod = TimeSpan.FromMilliseconds(current.igtPure);
+	print("igtmod has been updated:" + vars.igtMod.ToString());
 	}
-
 }
 
 exit
@@ -409,7 +403,6 @@ split
 		vars.timeSpanTally = vars.CalcStageTallies();
 		vars.FortuneNightSplit = true;
 	}
-	//8 = black screen for stage transition and 35 = Sky Battalion first screen
 	else if (alt == 8 && current.frame == 35){
 		vars.FortuneNightSplit = false;
 		vars.splitPlz = true;
@@ -434,8 +427,8 @@ gameTime
     }
     else
     {
-		gt = vars.timeSpanTally + vars.lastNonZeroScreen;
+		gt = vars.timeSpanTally + (vars.lastNonZeroScreen);
     }
-
+	
     return gt;
 }
