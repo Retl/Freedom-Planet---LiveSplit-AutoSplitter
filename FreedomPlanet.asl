@@ -20,9 +20,9 @@ state("FP", "steam-1.21.5-win")
     double tally : "FP.exe", 0x1D7ABB8;
     double altTally : "FP.exe", 0x1D7ABA0;
 
-    double minutes : "FP.exe", 0x193C070, 0x68; // milli offset + 0x80
-    double seconds : "FP.exe", 0x193C030, 0x68; // milli offset + 0x40
-    double milliseconds : "FP.exe", 0x193BFF0, 0x68;
+    double minutes : "FP.exe", 0x193C030, 0x68;
+    double seconds : "FP.exe", 0x193BFF0, 0x68;
+    double milliseconds : "FP.exe", 0x193BFB0, 0x68;
 
     double charX : "FP.exe", 0x1D7BC08;
     double charY : "FP.exe", 0x1D7BC10;
@@ -63,81 +63,82 @@ startup
     vars.tokenFPPOS = "_FP_POS";
     vars.tokenFPSPD = "_FP_SPD";
     vars.tokenFPSCRN = "_FP_SCRN";
-
+    
+    settings.Add("enableTimeTrial", true, "enableTimeTrial - Leave enabled if doing Time Trial ILs to prevent GameTime from being logged as 0:00:00.");
     //--------------------------------------------------
     settings.Add("enableLevelEndSplits", true, "Enable to allow the automatic Level-End splits on the levels checked below. They will be ignored if this is unchecked.");
-    settings.Add("enableAT4_LE", true, "Enable to allow the automatic Level-End splits for AT4.", "enableLevelEndSplits");
-    settings.Add("enableDV4_LE", true, "Enable to allow the automatic Level-End splits for DV4.", "enableLevelEndSplits");
-    settings.Add("enableRM5_LE", true, "Enable to allow the automatic Level-End splits for RM5.", "enableLevelEndSplits");
-    settings.Add("enableFN6_LE", true, "Enable to allow the automatic Level-End splits for FN6.", "enableLevelEndSplits");
-    settings.Add("enableSBHUB_LE", true, "Enable to allow the automatic Level-End splits for SBHUB.", "enableLevelEndSplits");
-    settings.Add("enableJC5_LE", true, "Enable to allow the automatic Level-End splits for JC5.", "enableLevelEndSplits");
-    settings.Add("enableTB6_LE", true, "Enable to allow the automatic Level-End splits for TB6.", "enableLevelEndSplits");
-    settings.Add("enablePL6_LE", true, "Enable to allow the automatic Level-End splits for PL6.", "enableLevelEndSplits");
-    settings.Add("enableTH3_LE", true, "Enable to allow the automatic Level-End splits for TH3.", "enableLevelEndSplits");
-    settings.Add("enableBG6_LE", true, "Enable to allow the automatic Level-End splits for BG6.", "enableLevelEndSplits");
-    settings.Add("enableFD2_LE", true, "Enable to allow the automatic Level-End splits for FD2.", "enableLevelEndSplits");
-    settings.Add("enableFD4_LE", true, "Enable to allow the automatic Level-End splits for FD4.", "enableLevelEndSplits");
-    settings.Add("enableFD6_LE", true, "Enable to allow the automatic Level-End splits for FD6.", "enableLevelEndSplits");
-    settings.Add("enableFD8_LE", true, "Enable to allow the automatic Level-End splits for FD8.", "enableLevelEndSplits");
+    settings.Add("enableAT4_LE", true, "AT4 - Enable to allow the automatic Level-End splits for AT4.", "enableLevelEndSplits");
+    settings.Add("enableDV4_LE", true, "DV4 - Enable to allow the automatic Level-End splits for DV4.", "enableLevelEndSplits");
+    settings.Add("enableRM5_LE", true, "RM5 - Enable to allow the automatic Level-End splits for RM5.", "enableLevelEndSplits");
+    settings.Add("enableFN6_LE", true, "FN6 - Enable to allow the automatic Level-End splits for FN6.", "enableLevelEndSplits");
+    settings.Add("enableSBHUB_LE", true, "SBHUB - Enable to allow the automatic Level-End splits for SBHUB.", "enableLevelEndSplits");
+    settings.Add("enableJC5_LE", true, "JC5 - Enable to allow the automatic Level-End splits for JC5.", "enableLevelEndSplits");
+    settings.Add("enableTB6_LE", true, "TB6 - Enable to allow the automatic Level-End splits for TB6.", "enableLevelEndSplits");
+    settings.Add("enablePL6_LE", true, "PL6 - Enable to allow the automatic Level-End splits for PL6.", "enableLevelEndSplits");
+    settings.Add("enableTH3_LE", true, "TH3 - Enable to allow the automatic Level-End splits for TH3.", "enableLevelEndSplits");
+    settings.Add("enableBG6_LE", true, "BG6 - Enable to allow the automatic Level-End splits for BG6.", "enableLevelEndSplits");
+    settings.Add("enableFD2_LE", true, "FD2 - Enable to allow the automatic Level-End splits for FD2.", "enableLevelEndSplits");
+    settings.Add("enableFD4_LE", true, "FD4 - Enable to allow the automatic Level-End splits for FD4.", "enableLevelEndSplits");
+    settings.Add("enableFD6_LE", true, "FD6 - Enable to allow the automatic Level-End splits for FD6.", "enableLevelEndSplits");
+    settings.Add("enableFD8_LE", true, "FD8 - Enable to allow the automatic Level-End splits for FD8.", "enableLevelEndSplits");
     //--------------------------------------------------
     settings.Add("enableScreenSplits", false, "Enable to allow the automatic Screen-Transition splits on the levels checked below. They will be ignored if this is unchecked.");
-    settings.Add("enableAT1_Screen", true, "Enable to allow the automatic Screen-Transition splits for AT1.", "enableScreenSplits");
-    settings.Add("enableAT2_Screen", true, "Enable to allow the automatic Screen-Transition splits for AT2.", "enableScreenSplits");
-    settings.Add("enableAT3_Screen", true, "Enable to allow the automatic Screen-Transition splits for AT3.", "enableScreenSplits");
-    settings.Add("enableAT4_Screen", true, "Enable to allow the automatic Screen-Transition splits for AT4.", "enableScreenSplits");
-    settings.Add("enableDV1_Screen", true, "Enable to allow the automatic Screen-Transition splits for DV1.", "enableScreenSplits");
-    settings.Add("enableDV2_Screen", true, "Enable to allow the automatic Screen-Transition splits for DV2.", "enableScreenSplits");
-    settings.Add("enableDV3_Screen", true, "Enable to allow the automatic Screen-Transition splits for DV3.", "enableScreenSplits");
-    settings.Add("enableDV4_Screen", true, "Enable to allow the automatic Screen-Transition splits for DV4.", "enableScreenSplits");
-    settings.Add("enableRM1_Screen", true, "Enable to allow the automatic Screen-Transition splits for RM1.", "enableScreenSplits");
-    settings.Add("enableRM2_Screen", true, "Enable to allow the automatic Screen-Transition splits for RM2.", "enableScreenSplits");
-    settings.Add("enableRM3_Screen", true, "Enable to allow the automatic Screen-Transition splits for RM3.", "enableScreenSplits");
-    settings.Add("enableRM4_Screen", true, "Enable to allow the automatic Screen-Transition splits for RM4.", "enableScreenSplits");
-    settings.Add("enableRM5_Screen", true, "Enable to allow the automatic Screen-Transition splits for RM5.", "enableScreenSplits");
-    settings.Add("enableFN1_Screen", true, "Enable to allow the automatic Screen-Transition splits for FN1.", "enableScreenSplits");
-    settings.Add("enableFN2_Screen", true, "Enable to allow the automatic Screen-Transition splits for FN2.", "enableScreenSplits");
-    settings.Add("enableFN3_Screen", true, "Enable to allow the automatic Screen-Transition splits for FN3.", "enableScreenSplits");
-    settings.Add("enableFN4_Screen", true, "Enable to allow the automatic Screen-Transition splits for FN4.", "enableScreenSplits");
-    settings.Add("enableFN5_Screen", true, "Enable to allow the automatic Screen-Transition splits for FN5.", "enableScreenSplits");
-    settings.Add("enableFN6_Screen", true, "Enable to allow the automatic Screen-Transition splits for FN6.", "enableScreenSplits");
-    settings.Add("enableSBHUB_Screen", true, "Enable to allow the automatic Screen-Transition splits for SBHUB.", "enableScreenSplits");
-    settings.Add("enableSB1_Screen", true, "Enable to allow the automatic Screen-Transition splits for SB1.", "enableScreenSplits");
-    settings.Add("enableSB2_Screen", true, "Enable to allow the automatic Screen-Transition splits for SB2.", "enableScreenSplits");
-    settings.Add("enableSB3_Screen", true, "Enable to allow the automatic Screen-Transition splits for SB3.", "enableScreenSplits");
-    settings.Add("enableJC1_Screen", true, "Enable to allow the automatic Screen-Transition splits for JC1.", "enableScreenSplits");
-    settings.Add("enableJC2_Screen", true, "Enable to allow the automatic Screen-Transition splits for JC2.", "enableScreenSplits");
-    settings.Add("enableJC3_Screen", true, "Enable to allow the automatic Screen-Transition splits for JC3.", "enableScreenSplits");
-    settings.Add("enableJC4_Screen", true, "Enable to allow the automatic Screen-Transition splits for JC4.", "enableScreenSplits");
-    settings.Add("enableJC5_Screen", true, "Enable to allow the automatic Screen-Transition splits for JC5.", "enableScreenSplits");
-    settings.Add("enableTB1_Screen", true, "Enable to allow the automatic Screen-Transition splits for TB1.", "enableScreenSplits");
-    settings.Add("enableTB2_Screen", true, "Enable to allow the automatic Screen-Transition splits for TB2.", "enableScreenSplits");
-    settings.Add("enableTB3_Screen", true, "Enable to allow the automatic Screen-Transition splits for TB3.", "enableScreenSplits");
-    settings.Add("enableTB4_Screen", true, "Enable to allow the automatic Screen-Transition splits for TB4.", "enableScreenSplits");
-    settings.Add("enableTB5_Screen", true, "Enable to allow the automatic Screen-Transition splits for TB5.", "enableScreenSplits");
-    settings.Add("enableTB6_Screen", true, "Enable to allow the automatic Screen-Transition splits for TB6.", "enableScreenSplits");
-    settings.Add("enablePL1_Screen", true, "Enable to allow the automatic Screen-Transition splits for PL1.", "enableScreenSplits");
-    settings.Add("enablePL2_Screen", true, "Enable to allow the automatic Screen-Transition splits for PL2.", "enableScreenSplits");
-    settings.Add("enablePL3_Screen", true, "Enable to allow the automatic Screen-Transition splits for PL3.", "enableScreenSplits");
-    settings.Add("enablePL4_Screen", true, "Enable to allow the automatic Screen-Transition splits for PL4.", "enableScreenSplits");
-    settings.Add("enablePL5_Screen", true, "Enable to allow the automatic Screen-Transition splits for PL5.", "enableScreenSplits");
-    settings.Add("enablePL6_Screen", true, "Enable to allow the automatic Screen-Transition splits for PL6.", "enableScreenSplits");
-    settings.Add("enableTH1_Screen", true, "Enable to allow the automatic Screen-Transition splits for TH1.", "enableScreenSplits");
-    settings.Add("enableTH2_Screen", true, "Enable to allow the automatic Screen-Transition splits for TH2.", "enableScreenSplits");
-    settings.Add("enableTH3_Screen", true, "Enable to allow the automatic Screen-Transition splits for TH3.", "enableScreenSplits");
-    settings.Add("enableBG1_Screen", true, "Enable to allow the automatic Screen-Transition splits for BG1.", "enableScreenSplits");
-    settings.Add("enableBG2_Screen", true, "Enable to allow the automatic Screen-Transition splits for BG2.", "enableScreenSplits");
-    settings.Add("enableBG3_Screen", true, "Enable to allow the automatic Screen-Transition splits for BG3.", "enableScreenSplits");
-    settings.Add("enableBG4_Screen", true, "Enable to allow the automatic Screen-Transition splits for BG4.", "enableScreenSplits");
-    settings.Add("enableBG5_Screen", true, "Enable to allow the automatic Screen-Transition splits for BG5.", "enableScreenSplits");
-    settings.Add("enableBG6_Screen", true, "Enable to allow the automatic Screen-Transition splits for BG6.", "enableScreenSplits");
-    settings.Add("enableFD1_Screen", true, "Enable to allow the automatic Screen-Transition splits for FD1.", "enableScreenSplits");
-    settings.Add("enableFD2_Screen", true, "Enable to allow the automatic Screen-Transition splits for FD2.", "enableScreenSplits");
-    settings.Add("enableFD3_Screen", true, "Enable to allow the automatic Screen-Transition splits for FD3.", "enableScreenSplits");
-    settings.Add("enableFD4_Screen", true, "Enable to allow the automatic Screen-Transition splits for FD4.", "enableScreenSplits");
-    settings.Add("enableFD5_Screen", true, "Enable to allow the automatic Screen-Transition splits for FD5.", "enableScreenSplits");
-    settings.Add("enableFD6_Screen", true, "Enable to allow the automatic Screen-Transition splits for FD6.", "enableScreenSplits");
-    settings.Add("enableFD7_Screen", true, "Enable to allow the automatic Screen-Transition splits for FD7.", "enableScreenSplits");
+    settings.Add("enableAT1_Screen", true, "AT1 - Enable to allow the automatic Screen-Transition splits for AT1.", "enableScreenSplits");
+    settings.Add("enableAT2_Screen", true, "AT2 - Enable to allow the automatic Screen-Transition splits for AT2.", "enableScreenSplits");
+    settings.Add("enableAT3_Screen", true, "AT3 - Enable to allow the automatic Screen-Transition splits for AT3.", "enableScreenSplits");
+    settings.Add("enableAT4_Screen", true, "AT4 - Enable to allow the automatic Screen-Transition splits for AT4.", "enableScreenSplits");
+    settings.Add("enableDV1_Screen", true, "DV1 - Enable to allow the automatic Screen-Transition splits for DV1.", "enableScreenSplits");
+    settings.Add("enableDV2_Screen", true, "DV2 - Enable to allow the automatic Screen-Transition splits for DV2.", "enableScreenSplits");
+    settings.Add("enableDV3_Screen", true, "DV3 - Enable to allow the automatic Screen-Transition splits for DV3.", "enableScreenSplits");
+    settings.Add("enableDV4_Screen", true, "DV4 - Enable to allow the automatic Screen-Transition splits for DV4.", "enableScreenSplits");
+    settings.Add("enableRM1_Screen", true, "RM1 - Enable to allow the automatic Screen-Transition splits for RM1.", "enableScreenSplits");
+    settings.Add("enableRM2_Screen", true, "RM2 - Enable to allow the automatic Screen-Transition splits for RM2.", "enableScreenSplits");
+    settings.Add("enableRM3_Screen", true, "RM3 - Enable to allow the automatic Screen-Transition splits for RM3.", "enableScreenSplits");
+    settings.Add("enableRM4_Screen", true, "RM4 - Enable to allow the automatic Screen-Transition splits for RM4.", "enableScreenSplits");
+    settings.Add("enableRM5_Screen", true, "RM5 - Enable to allow the automatic Screen-Transition splits for RM5.", "enableScreenSplits");
+    settings.Add("enableFN1_Screen", true, "FN1 - Enable to allow the automatic Screen-Transition splits for FN1.", "enableScreenSplits");
+    settings.Add("enableFN2_Screen", true, "FN2 - Enable to allow the automatic Screen-Transition splits for FN2.", "enableScreenSplits");
+    settings.Add("enableFN3_Screen", true, "FN3 - Enable to allow the automatic Screen-Transition splits for FN3.", "enableScreenSplits");
+    settings.Add("enableFN4_Screen", true, "FN4 - Enable to allow the automatic Screen-Transition splits for FN4.", "enableScreenSplits");
+    settings.Add("enableFN5_Screen", true, "FN5 - Enable to allow the automatic Screen-Transition splits for FN5.", "enableScreenSplits");
+    settings.Add("enableFN6_Screen", true, "FN6 - Enable to allow the automatic Screen-Transition splits for FN6.", "enableScreenSplits");
+    settings.Add("enableSBHUB_Screen", true, "SBHUB - Enable to allow the automatic Screen-Transition splits for SBHUB.", "enableScreenSplits");
+    settings.Add("enableSB1_Screen", true, "SB1 - Enable to allow the automatic Screen-Transition splits for SB1.", "enableScreenSplits");
+    settings.Add("enableSB2_Screen", true, "SB2 - Enable to allow the automatic Screen-Transition splits for SB2.", "enableScreenSplits");
+    settings.Add("enableSB3_Screen", true, "SB3 - Enable to allow the automatic Screen-Transition splits for SB3.", "enableScreenSplits");
+    settings.Add("enableJC1_Screen", true, "JC1 - Enable to allow the automatic Screen-Transition splits for JC1.", "enableScreenSplits");
+    settings.Add("enableJC2_Screen", true, "JC2 - Enable to allow the automatic Screen-Transition splits for JC2.", "enableScreenSplits");
+    settings.Add("enableJC3_Screen", true, "JC3 - Enable to allow the automatic Screen-Transition splits for JC3.", "enableScreenSplits");
+    settings.Add("enableJC4_Screen", true, "JC4 - Enable to allow the automatic Screen-Transition splits for JC4.", "enableScreenSplits");
+    settings.Add("enableJC5_Screen", true, "JC5 - Enable to allow the automatic Screen-Transition splits for JC5.", "enableScreenSplits");
+    settings.Add("enableTB1_Screen", true, "TB1 - Enable to allow the automatic Screen-Transition splits for TB1.", "enableScreenSplits");
+    settings.Add("enableTB2_Screen", true, "TB2 - Enable to allow the automatic Screen-Transition splits for TB2.", "enableScreenSplits");
+    settings.Add("enableTB3_Screen", true, "TB3 - Enable to allow the automatic Screen-Transition splits for TB3.", "enableScreenSplits");
+    settings.Add("enableTB4_Screen", true, "TB4 - Enable to allow the automatic Screen-Transition splits for TB4.", "enableScreenSplits");
+    settings.Add("enableTB5_Screen", true, "TB5 - Enable to allow the automatic Screen-Transition splits for TB5.", "enableScreenSplits");
+    settings.Add("enableTB6_Screen", true, "TB6 - Enable to allow the automatic Screen-Transition splits for TB6.", "enableScreenSplits");
+    settings.Add("enablePL1_Screen", true, "PL1 - Enable to allow the automatic Screen-Transition splits for PL1.", "enableScreenSplits");
+    settings.Add("enablePL2_Screen", true, "PL2 - Enable to allow the automatic Screen-Transition splits for PL2.", "enableScreenSplits");
+    settings.Add("enablePL3_Screen", true, "PL3 - Enable to allow the automatic Screen-Transition splits for PL3.", "enableScreenSplits");
+    settings.Add("enablePL4_Screen", true, "PL4 - Enable to allow the automatic Screen-Transition splits for PL4.", "enableScreenSplits");
+    settings.Add("enablePL5_Screen", true, "PL5 - Enable to allow the automatic Screen-Transition splits for PL5.", "enableScreenSplits");
+    settings.Add("enablePL6_Screen", true, "PL6 - Enable to allow the automatic Screen-Transition splits for PL6.", "enableScreenSplits");
+    settings.Add("enableTH1_Screen", true, "TH1 - Enable to allow the automatic Screen-Transition splits for TH1.", "enableScreenSplits");
+    settings.Add("enableTH2_Screen", true, "TH2 - Enable to allow the automatic Screen-Transition splits for TH2.", "enableScreenSplits");
+    settings.Add("enableTH3_Screen", true, "TH3 - Enable to allow the automatic Screen-Transition splits for TH3.", "enableScreenSplits");
+    settings.Add("enableBG1_Screen", true, "BG1 - Enable to allow the automatic Screen-Transition splits for BG1.", "enableScreenSplits");
+    settings.Add("enableBG2_Screen", true, "BG2 - Enable to allow the automatic Screen-Transition splits for BG2.", "enableScreenSplits");
+    settings.Add("enableBG3_Screen", true, "BG3 - Enable to allow the automatic Screen-Transition splits for BG3.", "enableScreenSplits");
+    settings.Add("enableBG4_Screen", true, "BG4 - Enable to allow the automatic Screen-Transition splits for BG4.", "enableScreenSplits");
+    settings.Add("enableBG5_Screen", true, "BG5 - Enable to allow the automatic Screen-Transition splits for BG5.", "enableScreenSplits");
+    settings.Add("enableBG6_Screen", true, "BG6 - Enable to allow the automatic Screen-Transition splits for BG6.", "enableScreenSplits");
+    settings.Add("enableFD1_Screen", true, "FD1 - Enable to allow the automatic Screen-Transition splits for FD1.", "enableScreenSplits");
+    settings.Add("enableFD2_Screen", true, "FD2 - Enable to allow the automatic Screen-Transition splits for FD2.", "enableScreenSplits");
+    settings.Add("enableFD3_Screen", true, "FD3 - Enable to allow the automatic Screen-Transition splits for FD3.", "enableScreenSplits");
+    settings.Add("enableFD4_Screen", true, "FD4 - Enable to allow the automatic Screen-Transition splits for FD4.", "enableScreenSplits");
+    settings.Add("enableFD5_Screen", true, "FD5 - Enable to allow the automatic Screen-Transition splits for FD5.", "enableScreenSplits");
+    settings.Add("enableFD6_Screen", true, "FD6 - Enable to allow the automatic Screen-Transition splits for FD6.", "enableScreenSplits");
+    settings.Add("enableFD7_Screen", true, "FD7 - Enable to allow the automatic Screen-Transition splits for FD7.", "enableScreenSplits");
     //--------------------------------------------------
     settings.Add("enableDataViewing", false, "Enabled Data-Viewing options. Only tested with steam-windows-1.20.4");
     settings.Add("enablePOSText", false, "Replace a Text Component starting with \"" + vars.tokenFPPOS + "\" with Position information.", "enableDataViewing");
@@ -145,7 +146,8 @@ startup
     settings.Add("enableSCRNText", false, "Replace a Text Component starting with \"" + vars.tokenFPSCRN + "\" with the Screen ID Number.", "enableDataViewing");
     
     //--------------------------------------------------
-    // settings.Add("setVersion-1-20-4", false, "Enable this if playing version 1.20.4");
+    settings.Add("enableOldSplitStyle", false, "If enabled, split on every room (except Fortune Night) by looking for the Black Load save screen ID.");
+    //--------------------------------------------------
 }
 
 init
@@ -454,25 +456,45 @@ shutdown
 
 start
 {
-    // Runs every tick: AutoStart the Timer when the Timer goes from 0 to less than one second.
-    if (vars.startPlz && !vars.started)
+    if (settings["enableTimeTrial"])
     {
-        vars.started = true;
-        return true;
+        // Quick and hacky hardcoding of the usual playble level range.
+        if (current.frame != old.frame 
+        && old.frame == 5
+        && current.frame >= 16
+        && current.frame <= 72        ) {return true;}
     }
-    return false;
+    else 
+    {
+        // Runs every tick: AutoStart the Timer when the Timer goes from 0 to less than one second.
+        if (vars.startPlz && !vars.started)
+        {
+            vars.started = true;
+            return true;
+        }
+        return false;
+    }
+    
 }
 
 reset
 {
-	// Runs every tick: AutoReset the Timer on the Main Menu.
-    if (vars.resetPlz)
+    if (settings["enableTimeTrial"])
     {
-        print("Performing reset.");
-        vars.InitializeVars();
-        return true;
+        // Stub for if we figure out a safe way to reset time trials. 
+        return false;
     }
-    return false;
+    else
+    {
+        // Runs every tick: AutoReset the Timer on the Main Menu.
+        if (vars.resetPlz)
+        {
+            print("Performing reset.");
+            vars.InitializeVars();
+            return true;
+        }
+        return false;
+    }
 }
 
 split
@@ -496,9 +518,92 @@ split
 		vars.timeSpanTally = vars.CalcStageTallies(alt+1);
 		
 	}
-	else if (alt == 8 && current.frame == 35){
-		vars.splitPlz = true;
-	}
+	else if (settings["enableOldSplitStyle"]) 
+    {
+        if (alt == 8 && current.frame == 35){
+            vars.splitPlz = true;
+        }
+    }
+    else if (settings["enableScreenSplits"]) 
+    {
+        if (current.frame != old.frame) {
+            if (old.frame == 16 && settings["enableAT1_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 17 && settings["enableAT2_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 18 && settings["enableAT3_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 19 && settings["enableAT4_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 20 && settings["enableDV1_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 21 && settings["enableDV2_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 22 && settings["enableDV3_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 23 && settings["enableDV4_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 24 && settings["enableRM1_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 25 && settings["enableRM2_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 26 && settings["enableRM3_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 27 && settings["enableRM4_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 28 && settings["enableRM5_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 29 && settings["enableFN1_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 30 && settings["enableFN2_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 31 && settings["enableFN3_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 32 && settings["enableFN4_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 33 && settings["enableFN5_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 34 && settings["enableFN6_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 35 && settings["enableSBHUB_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 36 && settings["enableSB1_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 37 && settings["enableSB2_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 38 && settings["enableSB3_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 39 && settings["enableJC1_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 40 && settings["enableJC2_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 41 && settings["enableJC3_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 42 && settings["enableJC4_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 43 && settings["enableJC5_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 44 && settings["enableTB1_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 45 && settings["enableTB2_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 46 && settings["enableTB3_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 47 && settings["enableTB4_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 48 && settings["enableTB5_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 49 && settings["enableTB6_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 50 && settings["enablePL1_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 51 && settings["enablePL2_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 52 && settings["enablePL3_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 53 && settings["enablePL4_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 54 && settings["enablePL5_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 55 && settings["enablePL6_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 56 && settings["enableTH1_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 57 && settings["enableTH2_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 58 && settings["enableTH3_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 59 && settings["enableBG1_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 60 && settings["enableBG2_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 61 && settings["enableBG3_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 62 && settings["enableBG4_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 63 && settings["enableBG5_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 64 && settings["enableBG6_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 65 && settings["enableFD1_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 66 && settings["enableFD2_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 67 && settings["enableFD3_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 68 && settings["enableFD4_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 69 && settings["enableFD5_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 70 && settings["enableFD6_Screen"]) {vars.splitPlz = true;}
+            if (old.frame == 71 && settings["enableFD7_Screen"]) {vars.splitPlz = true;}
+        } 
+    }
+    else if (settings["enableLevelEndSplits"]) 
+    {
+        if (current.frame != old.frame) {
+            if (old.frame == 19 && settings["enableAT4_LE"]) {vars.splitPlz = true;}
+            if (old.frame == 23 && settings["enableDV4_LE"]) {vars.splitPlz = true;}
+            if (old.frame == 28 && settings["enableRM5_LE"]) {vars.splitPlz = true;}
+            if (old.frame == 34 && settings["enableFN6_LE"]) {vars.splitPlz = true;}
+            if (old.frame == 35 && settings["enableSBHUB_LE"]) {vars.splitPlz = true;}
+            if (old.frame == 43 && settings["enableJC5_LE"]) {vars.splitPlz = true;}
+            if (old.frame == 49 && settings["enableTB6_LE"]) {vars.splitPlz = true;}
+            if (old.frame == 55 && settings["enablePL6_LE"]) {vars.splitPlz = true;}
+            if (old.frame == 58 && settings["enableTH3_LE"]) {vars.splitPlz = true;}
+            if (old.frame == 64 && settings["enableBG6_LE"]) {vars.splitPlz = true;}
+            if (old.frame == 66 && settings["enableFD2_LE"]) {vars.splitPlz = true;}
+            if (old.frame == 68 && settings["enableFD4_LE"]) {vars.splitPlz = true;}
+            if (old.frame == 70 && settings["enableFD6_LE"]) {vars.splitPlz = true;}
+            if (old.frame == 72 && settings["enableFD8_LE"]) {vars.splitPlz = true;}
+        } 
+    }
     return (vars.splitPlz);
 }
 
@@ -511,16 +616,24 @@ gameTime
 {
 	// Runs every tick: Sets the Game Time for the LiveSplit Timer.
     TimeSpan gt;
-	
-    if (vars.postTally)
+    
+	if (!settings["enableTimeTrial"]) 
     {
-		// Don't display the sum until moving to a new Frame/Screen.
-        gt = vars.timeSpanTally;
+        if (vars.postTally)
+        {
+            // Don't display the sum until moving to a new Frame/Screen.
+            gt = vars.timeSpanTally; // Adventure / Classic Mode only?
+        }
+        else
+        {
+            gt = (vars.timeSpanTally + (vars.onScreenTime));
+        }
     }
-    else
+    else 
     {
-		gt = (vars.timeSpanTally + (vars.onScreenTime));
+        gt = vars.lastNonZeroTime;
     }
+    
 	
 	//When the run ends, add 0.06 seconds to estimate the final time, because of the milliseconds.
 	//ending cutscene = 85
