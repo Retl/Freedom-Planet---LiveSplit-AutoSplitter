@@ -629,7 +629,7 @@ gameTime
             gt = (vars.timeSpanTally + (vars.onScreenTime));
         }
     }
-    else if (settings["enableTimeTrial"]) 
+    else 
     {
         gt = vars.lastNonZeroTime;
     }
