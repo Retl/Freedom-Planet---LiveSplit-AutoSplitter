@@ -481,7 +481,11 @@ reset
 {
     if (settings["enableTimeTrial"])
     {
-        // Stub for if we figure out a safe way to reset time trials. 
+        // Autoreset on the Time Trial menu.
+        if (current.frame != old.frame
+            && current.frame == 5) {
+            return true;
+        }
         return false;
     }
     else
